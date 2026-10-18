@@ -9,7 +9,8 @@
 > the editor, so keep the branch in a working state.
 <!-- LOVABLE:END -->
 
-- Live Qloo calls cross the agent.functions.ts server boundary; qloo.ts validates and maps provider responses while sample-agent.ts contains isolated failure-only samples, so secrets remain server-only and UI stays shared.
+- Live Qloo calls cross the agent.functions.ts server boundary; qloo.ts validates and maps provider responses while sample-agent.ts separates explicit generic comparison samples from same-city failure samples, so secrets remain server-only and UI stays shared.
+- Qloo image parsing and cover-size checks live in qloo-images.ts; normalize URLs before deduplication and check loaded dimensions to prevent blurry thumbnail upscaling.
 - Recommendations require a recognized explicit destination, independent of sample coverage; never substitute another city, to retain destination integrity.
 - Keep city photograph references centralized in src/lib/photos.ts for panel imagery; neighborhood cards show only their own Qloo place image (distinct per card) or a plain card, to avoid misleading generic photos.
 - Similar-city suggestions come from the hardcoded list in src/lib/similar-cities.ts (country, then region, then climate), never from Qloo, so suggestions stay predictable.

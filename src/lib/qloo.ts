@@ -3,6 +3,7 @@ import { resolveCity } from "./cities";
 import { runSampleAgent } from "./sample-agent";
 import { similarCities, type Climate } from "./similar-cities";
 import { z } from "zod";
+import { placeImages } from "./qloo-images";
 
 export const TASTE_CHIPS = ["Food", "Music", "Art", "Nightlife", "Outdoors", "Fashion", "Books", "Film"] as const;
 export const prefsSchema = z.object({
@@ -24,7 +25,7 @@ const entitySchema = z.object({
     locality: z.object({ neighborhood: z.object({ name: z.string() }).nullable().optional() }).passthrough().optional(),
     description: z.string().nullable().optional(), is_closed: z.boolean().nullable().optional(),
     primary_genre: z.object({ name: z.string() }).nullable().optional(), price_level: z.number().nullable().optional(),
-    image: z.object({ url: z.string().url() }).nullable().optional().catch(null),
+    image: z.unknown().optional(), images: z.unknown().optional(),
   }).passthrough().optional(),
 }).passthrough();
 type Entity = z.infer<typeof entitySchema>;
@@ -34,20 +35,6 @@ const lenient = <T extends z.ZodTypeAny>(item: T) => z.array(z.unknown()).transf
 const responseSchema = z.object({ success: z.boolean().optional(), results: z.object({ tags: lenient(tagSchema), entities: lenient(entitySchema), heatmap: lenient(cellSchema) }).passthrough() });
 
 export { similarCities };
-// Qloo image URLs often carry downscaling params; strip them to request the original size.
-const originalImage = (url: string) => {
-  try {
-    const u = new URL(url);
-    for (const k of ["w", "width", "h", "height", "size", "fit", "q", "quality", "dpr"]) u.searchParams.delete(k);
-    return u.toString();
-  } catch {
-    return url;
-  }
-};
-const imageWidth = (url: string) => {
-  const m = url.match(/[?&](?:w|width)=(\d+)/i);
-  return m ? Number(m[1]) : 0;
-};
 function blank(city: string, status: "unavailable" | "error", steps: AgentStep[], climate?: Climate): AgentResult {
   const summary = status === "unavailable" ? `${city} isn't available yet` : `Qloo couldn't load ${city} right now. Please try again.`;
   return { city, mode: "qloo", source: "qloo", status, summary, spoken: summary, steps, neighborhoods: [], places: [], plan: [], alternatives: status === "unavailable" ? similarCities(city, climate) : [] };
@@ -164,12 +151,13 @@ export async function queryQloo(input: z.infer<typeof agentInput>, key: string |
     const used = new Set<string>();
     for (const n of top) {
       const candidates = rows
-        .filter((p) => neighborhoodName(p) === n.name && p.properties?.image?.url && !used.has(p.properties.image.url))
-        .map((p) => ({ p, w: imageWidth(p.properties!.image!.url) }));
-      const sharp = candidates.filter((c) => c.w >= 800);
-      const pool = (sharp.length ? sharp : candidates).sort((a, b) => b.w - a.w);
-      const hit = pool[0]?.p;
-      if (hit?.properties?.image?.url) { used.add(hit.properties.image.url); n.image = originalImage(hit.properties.image.url); n.imageAlt = hit.name; }
+        .filter((p) => neighborhoodName(p) === n.name)
+        .flatMap((p) => placeImages(p).map((image) => ({ p, ...image })))
+        .filter((image) => !used.has(image.url));
+      const sharp = candidates.filter((c) => c.width >= 800);
+      const pool = (sharp.length ? sharp : candidates).sort((a, b) => b.width - a.width || b.height - a.height);
+      const hit = pool[0];
+      if (hit) { used.add(hit.url); n.image = hit.url; n.imageAlt = hit.p.name; }
     }
     const plan = buildPlan(city, prefs, places, top);
     const summary = top.length ? `Qloo's place insights point to ${top.map((n) => n.name).join(", ")} in ${city}. ${cells.length ? "Neighborhood scores estimate taste affinity at nearby heatmap cells, not housing suitability." : "Qloo returned no heatmap scores; these neighborhoods come from recommended places."}` : `Qloo found ${rows.length} places in ${city}${cells.length ? " and taste heatmap results" : ""}, but no verified neighborhood labels.`;
@@ -178,8 +166,9 @@ export async function queryQloo(input: z.infer<typeof agentInput>, key: string |
     // A 400 "unable to resolve to a valid locality" means Qloo has no coverage here: show the unavailable blank, not an error.
     if (e instanceof LocalityError) return blank(city, "unavailable", steps, prefs.climate);
     try {
-      const sample = await runSampleAgent(message || (prefs.chips ?? []).join(", "), "qloo", undefined, city);
-      return { ...sample, steps, summary: `Qloo couldn't load ${city} right now. Showing same-city sample recommendations, not live Qloo results. ${sample.summary}` };
+      const sample = await runSampleAgent(message || (prefs.chips ?? []).join(", "), "qloo", undefined, city, prefs);
+      const summary = `Qloo couldn't load ${city} right now. Showing same-city sample recommendations, not live Qloo results. ${sample.summary}`;
+      return { ...sample, trip: prefs.trip ?? "moving", plan: buildPlan(city, prefs, sample.places, sample.neighborhoods), steps, summary, spoken: summary };
     } catch { return blank(city, "error", steps); }
   }
 }
