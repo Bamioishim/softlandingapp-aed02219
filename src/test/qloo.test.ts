@@ -69,7 +69,7 @@ describe("result quality rules", () => {
     const hot = { ...place, query: { affinity: 1 } };
     const { fetcher } = fakeFetch((u) => (u.includes("/v2/tags") ? json({ results: { tags: [] } }) : json({ results: { entities: [hot] } })));
     const r = await queryQloo({ city: "Paris", message: "coffee" }, "k", fetcher);
-    expect(r.neighborhoods.every((n) => n.score <= 99)).toBe(true);
+    expect(r.neighborhoods[0]?.score).toBe(99);
   });
 
   it("strips size params from image URLs and prefers images 800px wide or more", async () => {

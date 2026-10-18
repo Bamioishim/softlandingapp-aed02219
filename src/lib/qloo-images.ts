@@ -17,15 +17,15 @@ export function placeImages(entity: unknown): ImageCandidate[] {
     if (Array.isArray(value)) { value.forEach(read); return; }
     if (!value || typeof value !== "object") return;
     const image = value as Record<string, unknown>;
-    if (typeof image.url === "string") {
+    if (typeof image["url"] === "string") {
       try {
-        const url = new URL(image.url);
+        const url = new URL(image["url"]);
         if (url.protocol !== "https:" && url.protocol !== "http:") return;
         const dimension = (key: "width" | "height", short: string) => {
           const n = Number(image[key] ?? url.searchParams.get(key) ?? url.searchParams.get(short));
           return Number.isFinite(n) && n > 0 ? n : 0;
         };
-        found.push({ url: originalImage(image.url), width: dimension("width", "w"), height: dimension("height", "h") });
+        found.push({ url: originalImage(image["url"]), width: dimension("width", "w"), height: dimension("height", "h") });
       } catch { /* Invalid provider image, skip it. */ }
     }
     for (const key of ["original", "large", "medium", "small", "thumbnail", "variants", "sizes", "images"]) {
@@ -34,8 +34,8 @@ export function placeImages(entity: unknown): ImageCandidate[] {
   };
   if (entity && typeof entity === "object") {
     const row = entity as Record<string, unknown>;
-    const properties = row.properties && typeof row.properties === "object" ? row.properties as Record<string, unknown> : {};
-    [properties.image, properties.images, row.image, row.images].forEach(read);
+    const properties = row["properties"] && typeof row["properties"] === "object" ? row["properties"] as Record<string, unknown> : {};
+    [properties["image"], properties["images"], row["image"], row["images"]].forEach(read);
   }
   return found.sort((a, b) => b.width - a.width || b.height - a.height);
 }

@@ -277,7 +277,9 @@ function Index() {
         </Button>
         <div className="relative flex items-center justify-end gap-4">
           <div className="hidden max-w-44 lg:block">
-            <CityPicker compact value={city} onResolve={handleCity} />
+            <CityPicker compact value={city} onResolve={handleCity} onSearch={(r) => {
+              if (!started) void search(input.trim() || chips.join(", ") || "local favorites", r, mode);
+            }} />
           </div>
           <Button
             variant="icon"
@@ -514,7 +516,7 @@ function Index() {
               </div>
             </section>}
             {city && previewPlan.length > 0 && <div className="section-space">
-              <Timeline plan={trip === "visiting" ? previewPlan.slice(0, 3).map((w, i) => ({ week: `Day ${i + 1}`, items: ["Explore local favorites", "Find a café and take a neighborhood walk"] })) : previewPlan} city={city.city.name} visiting={trip === "visiting"} />
+              <Timeline plan={trip === "visiting" ? previewPlan.slice(0, 3).map((_, i) => ({ week: `Day ${i + 1}`, items: ["Explore local favorites", "Find a café and take a neighborhood walk"] })) : previewPlan} city={city.city.name} visiting={trip === "visiting"} />
             </div>}
             <section className="section-space text-center">
               <p className="eyebrow text-muted-foreground">Start with what you love</p>
