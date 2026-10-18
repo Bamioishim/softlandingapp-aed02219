@@ -1,4 +1,6 @@
 import { CITY_DATA } from "./city-data";
+import { resolveCity } from "./cities";
+import type { Prefs } from "./qloo";
 
 import type { Mode, AgentStep, AgentResult, NeighborhoodMatch } from "./agent-types";
 
@@ -36,6 +38,7 @@ export async function runSampleAgent(
   mode: Mode = "qloo",
   onStep?: (step: AgentStep, index: number) => void,
   city?: string,
+  prefs: Prefs = {},
 ): Promise<AgentResult> {
   const steps: AgentStep[] = [];
   const step = async (label: string, ms: number) => {
@@ -46,6 +49,35 @@ export async function runSampleAgent(
   };
 
   if (!city) throw new Error("Pick a city to see your matches");
+  if (!resolveCity(city)) throw new Error("Choose a recognized city before finding matches");
+  if (mode === "llm") {
+    const picks = [
+      { name: "Neighborhood café", category: "Cafe", tags: ["coffee", "quiet", "budget"] },
+      { name: "Local food market", category: "Restaurant", tags: ["food", "budget"] },
+      { name: "Public park", category: "Place", tags: ["outdoors", "quiet", "budget"] },
+      { name: "Live music venue", category: "Venue", tags: ["music", "nightlife"] },
+      { name: "Independent bookshop", category: "Shop", tags: ["books", "quiet"] },
+      { name: "Local gallery", category: "Place", tags: ["art", "quiet"] },
+    ];
+    const tastes = [...extract(userMessage), ...(prefs.chips ?? []).map((c) => c.toLowerCase())];
+    const rank = (p: typeof picks[number]) => p.tags.filter((t) => tastes.includes(t)).length * 10
+      + (prefs.budget === "low" && p.tags.includes("budget") ? 2 : 0)
+      + (prefs.pace === "quiet" && p.tags.includes("quiet") ? 2 : 0)
+      + (prefs.pace === "energetic" && p.tags.includes("nightlife") ? 2 : 0);
+    const places = picks.sort((a, b) => rank(b) - rank(a)).map((p) => ({ ...p, neighborhood: city, reason: "Built-in sample idea, not a verified place in this city." }));
+    const visiting = prefs.trip === "visiting";
+    const plan = visiting
+      ? [0, 1, 2].map((i) => ({ week: `Day ${i + 1}`, items: [`Explore ${city} on foot`, `Look for a ${places[i * 2]?.name.toLowerCase()}`, `Look for a ${places[i * 2 + 1]?.name.toLowerCase()}`] }))
+      : [
+          { week: "Week 1", items: ["Check local registration requirements", "Arrange a SIM card and transport", "Explore local banking options"] },
+          { week: "Week 2", items: ["Compare apartment listings", "Find a neighborhood café"] },
+          { week: "Week 3", items: ["Visit a local market", "Look for a community group"] },
+          { week: "Week 4", items: ["Review your housing options", "Build a weekly routine"] },
+        ];
+    const summary = `Sample data, not from Qloo. These are generic ideas for ${city}, not verified local recommendations.`;
+    await step("Ranked generic built-in samples", 0);
+    return { city, mode, source: "sample", status: "ok", trip: prefs.trip ?? "moving", summary, spoken: summary, neighborhoods: [], places, plan, steps };
+  }
   const data = CITY_DATA[city];
   if (!data) throw new Error("Choose a supported city before finding matches");
   const NEIGHBORHOODS = data.neighborhoods;
@@ -54,7 +86,7 @@ export async function runSampleAgent(
   const pretty = tastes.filter((t) => t !== "mid").map((t) => LABELS[t] ?? t.charAt(0).toUpperCase() + t.slice(1));
   await step(`Locked destination: ${city}`, 240);
   await step(`Understood your tastes: ${pretty.join(", ")}`, 320);
-  await step(mode === "qloo" ? "Matched taste signals (Qloo)" : "Inferred related tastes (built-in samples)", 420);
+  await step("Matched tastes against built-in samples", 420);
 
   const scored = NEIGHBORHOODS.map((n) => {
     let hits = tastes.filter((t) => n.tags.includes(t)).length;
@@ -64,7 +96,7 @@ export async function runSampleAgent(
     return { ...n, score, matched: tastes.filter((t) => n.tags.includes(t)), rentRange: data.rent[n.rent] };
   }).sort((a, b) => b.score - a.score);
   const top = scored.slice(0, 3);
-  await step(mode === "qloo" ? `Scored ${city} neighborhoods (Qloo heatmap)` : "Ranked neighborhoods (built-in samples)", 480);
+  await step("Ranked sample neighborhoods", 480);
 
   const topNames = top.map((n) => n.name);
   const places = PLACES.map((p) => ({
@@ -74,7 +106,7 @@ export async function runSampleAgent(
     .sort((a, b) => b.s - a.s)
     .slice(0, 6)
     .map((x) => x.p);
-  await step(mode === "qloo" ? "Found places you'd love (Qloo insights)" : "Suggested places (built-in samples)", 450);
+  await step("Suggested sample places", 450);
 
   const [a, b, c] = top as [NeighborhoodMatch, NeighborhoodMatch, NeighborhoodMatch];
   const plan = [

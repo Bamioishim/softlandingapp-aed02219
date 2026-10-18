@@ -108,6 +108,7 @@ function Index() {
           );
       },
       c.city.name,
+      { budget: (budget || undefined) as Prefs["budget"], pace: (pace || undefined) as Prefs["pace"], trip, lifeStage: (lifeStage || undefined) as Prefs["lifeStage"], chips: chips as Prefs["chips"] },
     );
     if (request !== requestRef.current) return;
     setMsgs((prev) => prev.map((x) => (x.id === aid ? { ...x, result } : x)));
@@ -397,7 +398,9 @@ function Index() {
                     <label className="eyebrow" htmlFor="destination-city">
                       Destination
                     </label>
-                    <CityPicker id="destination-city" value={city} onResolve={handleCity} />
+                    <CityPicker id="destination-city" value={city} onResolve={handleCity} onSearch={(r) => {
+                      if (!started) void search(input.trim() || chips.join(", ") || "local favorites", r, mode);
+                    }} />
                   </div>
                   <div className="destination-field">
                     <label className="eyebrow" htmlFor="tastes-input">
@@ -502,7 +505,7 @@ function Index() {
                 <h2 className="section-title">
                   Neighborhoods that <i>get you.</i>
                 </h2>
-                <p className="eyebrow pb-2 text-muted-foreground">Matched by Qloo</p>
+                <p className="eyebrow pb-2 text-muted-foreground">Sample data, not from Qloo</p>
               </div>
               <div className={`grid gap-8 sm:grid-cols-2 ${preview.length === 3 ? "lg:grid-cols-3" : "lg:grid-cols-4"}`}>
                 {preview.map((n, i) => (
@@ -511,7 +514,7 @@ function Index() {
               </div>
             </section>}
             {city && previewPlan.length > 0 && <div className="section-space">
-              <Timeline plan={previewPlan} city={city.city.name} />
+              <Timeline plan={trip === "visiting" ? previewPlan.slice(0, 3).map((w, i) => ({ week: `Day ${i + 1}`, items: ["Explore local favorites", "Find a café and take a neighborhood walk"] })) : previewPlan} city={city.city.name} visiting={trip === "visiting"} />
             </div>}
             <section className="section-space text-center">
               <p className="eyebrow text-muted-foreground">Start with what you love</p>
