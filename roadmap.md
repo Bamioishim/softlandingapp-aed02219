@@ -1,5 +1,9 @@
 # Roadmap
 
+- [ ] Audit and finish score cap, Visiting heading, city-selection searches and mode-switch reruns
+- [ ] Improve Qloo photo selection and prevent tiny thumbnail upscaling
+- [ ] Verify and correct README claims; run regression tests and search flows
+
 - [x] Clear copied Drizzle migrations and rescaffold empty migration set (journal already empty, no migration files)
 - [x] Update QLOO_API_KEY secret (new value saved via secure form)
 - [x] Live Qloo end to end: Paris shows live Qloo neighborhoods and places; sample data only on Qloo failure (fixed 20s timeout -> 60s; heatmap skipped when no taste tags)
