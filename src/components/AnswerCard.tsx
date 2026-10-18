@@ -14,7 +14,6 @@ import type { AgentResult, AgentStep, NeighborhoodMatch, Place } from "@/lib/age
 import { Button } from "./Button";
 import { supabase } from "@/integrations/supabase/client";
 import { resolveCity } from "@/lib/cities";
-import { canCoverImage } from "@/lib/qloo-images";
 
 export function Collapsible({ title, children }: { title: string; children: React.ReactNode }) {
   const [open, setOpen] = useState(false);
@@ -104,10 +103,6 @@ export function NeighborhoodCard({
             className="neighborhood-photo"
             loading="lazy"
             decoding="async"
-            onLoad={(e) => {
-              const image = e.currentTarget;
-              if (!canCoverImage(image.naturalWidth, image.naturalHeight, image.clientWidth, image.clientHeight)) setBroken(true);
-            }}
             onError={() => setBroken(true)}
           />
         ) : (
