@@ -1,13 +1,32 @@
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it } from "vitest";
 import { CityPicker } from "@/components/CityPicker";
+import { AnswerCard } from "@/components/AnswerCard";
 import { runSampleAgent } from "@/lib/sample-agent";
 import { searchCities } from "@/lib/cities";
 import { canCoverImage, originalImage, placeImages } from "@/lib/qloo-images";
+import { queryQloo } from "@/lib/qloo";
 
 afterEach(cleanup);
 
 describe("Search and sample rules", () => {
+  it("clicking the Ilorin similar-city suggestion selects Lagos immediately", async () => {
+    const fetcher = (async () => new Response(JSON.stringify({ results: { tags: [], entities: [] } }))) as typeof fetch;
+    const r = await queryQloo({ city: "Ilorin", message: "coffee" }, "test", fetcher);
+    let searched = "";
+    render(<AnswerCard r={r} onChooseCity={(city) => { searched = city; }} />);
+    fireEvent.click(screen.getByRole("button", { name: "Lagos" }));
+    expect(searched).toBe("Lagos");
+  });
+
+  it("Qloo failure preserves Visiting plans in same-city samples", async () => {
+    const fetcher = (async () => new Response("Unauthorized", { status: 401 })) as typeof fetch;
+    const r = await queryQloo({ city: "Lagos", message: "coffee", prefs: { trip: "visiting" } }, "test", fetcher);
+    expect(r.source).toBe("sample");
+    expect(r.trip).toBe("visiting");
+    expect(r.plan[0]?.week).toBe("Day 1");
+  });
+
   it("Enter chooses the top dropdown match and starts a search", () => {
     let selected = "";
     let searched = "";
