@@ -6,11 +6,13 @@ import { Button } from "./Button";
 export function CityPicker({
   value,
   onResolve,
+  onSearch,
   compact = false,
   id,
 }: {
   value: CityResolution | null;
   onResolve: (r: CityResolution) => void;
+  onSearch?: (r: CityResolution) => void;
   compact?: boolean;
   id?: string;
 }) {
@@ -25,7 +27,7 @@ export function CityPicker({
     document.addEventListener("mousedown", close);
     return () => document.removeEventListener("mousedown", close);
   }, []);
-  const pick = (name: string) => {
+  const pick = (name: string, search = false) => {
     let r = resolveCity(name);
     if (!r) {
       const top = searchCities(name)[0];
@@ -36,6 +38,7 @@ export function CityPicker({
       return;
     }
     onResolve(r);
+    if (search) onSearch?.(r);
     setError("");
     setQuery("");
     setOpen(false);
@@ -61,7 +64,7 @@ export function CityPicker({
           onKeyDown={(e) => {
             if (e.key === "Enter") {
               e.preventDefault();
-              pick(query);
+              pick(searchCities(query)[0]?.name ?? query, true);
             }
             if (e.key === "Escape") setOpen(false);
           }}

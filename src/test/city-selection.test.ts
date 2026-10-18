@@ -27,10 +27,10 @@ describe("Explicit city selection", () => {
     ).rejects.toThrow("recognized city");
   });
 
-  it("uses the selected city's neighborhoods and plan", async () => {
+  it("keeps the selected city in generic samples without claiming local neighborhoods", async () => {
     const result = await runAgent("coffee", "llm", undefined, "London");
     expect(result.city).toBe("London");
-    expect(result.neighborhoods.map((n) => n.name).sort()).toEqual(["Hackney", "Hampstead", "Peckham"]);
-    expect(result.plan[0]?.items).toContain("Set up contactless or an Oyster card for the Tube");
+    expect(result.neighborhoods).toEqual([]);
+    expect(result.places.every((p) => p.neighborhood === "London")).toBe(true);
   });
 });
