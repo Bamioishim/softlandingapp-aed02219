@@ -12,9 +12,11 @@ export type Place = {
   neighborhood: string;
   tags: string[];
   reason: string;
+  lat?: number;
+  lng?: number;
 };
 export type AgentStep = { label: string; ms: number };
-export type NeighborhoodMatch = Neighborhood & { image?: string; imageAlt?: string; scoreAvailable?: boolean; score: number; matched: string[]; rentRange: string };
+export type NeighborhoodMatch = Neighborhood & { image?: string; imageAlt?: string; scoreAvailable?: boolean; score: number; matched: string[]; rentRange: string; lat?: number; lng?: number };
 export type AgentResult = {
   summary: string;
   neighborhoods: NeighborhoodMatch[];
