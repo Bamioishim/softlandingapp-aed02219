@@ -294,6 +294,20 @@ export function Timeline({ plan, city, visiting = false }: { plan: AgentResult["
 }
 export function AnswerCard({ r, onChooseCity }: { r: AgentResult; onChooseCity?: (name: string) => void }) {
   const [requestState, setRequestState] = useState<"idle" | "saving" | "saved" | "error">("idle");
+  const [selected, setSelected] = useState<{ id: string; tick: number } | null>(null);
+  const mapRef = useRef<HTMLDivElement>(null);
+  const spots: MapSpot[] = [
+    ...r.neighborhoods
+      .filter((n) => typeof n.lat === "number" && typeof n.lng === "number")
+      .map((n) => ({ id: spotId("neighborhood", n.name), name: n.name, area: `${r.city} · ${n.borough}`, kind: "neighborhood" as const, lat: n.lat!, lng: n.lng!, image: n.image && n.image.length ? n.image : undefined, imageAlt: n.imageAlt })),
+    ...r.places
+      .filter((p) => typeof p.lat === "number" && typeof p.lng === "number")
+      .map((p) => ({ id: spotId("place", p.name), name: p.name, area: p.neighborhood, kind: "place" as const, lat: p.lat!, lng: p.lng! })),
+  ];
+  const selectSpot = (id: string) => {
+    setSelected({ id, tick: Date.now() });
+    mapRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+  };
   const requestCity = async () => {
     const city = resolveCity(r.city)?.city;
     if (!city || requestState === "saving" || requestState === "saved") return;
@@ -334,7 +348,7 @@ export function AnswerCard({ r, onChooseCity }: { r: AgentResult; onChooseCity?:
         </h2>
         <div className="grid gap-7 md:grid-cols-3">
           {r.neighborhoods.map((n, i) => (
-            <NeighborhoodCard key={n.name} n={n} city={r.city} index={i} />
+            <NeighborhoodCard key={n.name} n={n} city={r.city} index={i} onClick={typeof n.lat === "number" ? () => selectSpot(spotId("neighborhood", n.name)) : undefined} />
           ))}
         </div>
       </div>}
@@ -344,9 +358,15 @@ export function AnswerCard({ r, onChooseCity }: { r: AgentResult; onChooseCity?:
         </h2>
         <div className="grid gap-4 sm:grid-cols-2">
           {r.places.map((p) => (
-            <PlaceCard key={p.name} p={p} />
+            <PlaceCard key={p.name} p={p} onClick={typeof p.lat === "number" ? () => selectSpot(spotId("place", p.name)) : undefined} />
           ))}
         </div>
+      </div>}
+      {spots.length > 0 && <div ref={mapRef} className="scroll-mt-28">
+        <h2 className="mb-6 font-display text-4xl">
+          Your {r.city} <em>on the map.</em>
+        </h2>
+        <CityMap spots={spots} selectedId={selected?.id ?? null} focusTick={selected?.tick ?? 0} onSelect={selectSpot} />
       </div>}
       <Timeline plan={r.plan} city={r.city} visiting={r.trip === "visiting"} />
       <Collapsible title="Agent steps">
