@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   Check,
   ChevronDown,
@@ -14,6 +14,8 @@ import type { AgentResult, AgentStep, NeighborhoodMatch, Place } from "@/lib/age
 import { Button } from "./Button";
 import { supabase } from "@/integrations/supabase/client";
 import { resolveCity } from "@/lib/cities";
+import { CityMap } from "./CityMap";
+import { spotId, type MapSpot } from "@/lib/map-types";
 
 export function Collapsible({ title, children }: { title: string; children: React.ReactNode }) {
   const [open, setOpen] = useState(false);
@@ -84,17 +86,32 @@ export function NeighborhoodCard({
   n,
   city,
   index = 0,
+  onClick,
 }: {
   n: NeighborhoodMatch;
   city: string;
   index?: number;
+  onClick?: () => void;
 }) {
   // Only the card's own Qloo place photo is shown; without one, a plain cream card with the name.
   const [broken, setBroken] = useState(false);
   useEffect(() => setBroken(false), [n.image]);
   const tags = [...new Set([...n.matched, ...n.tags])].slice(0, 3);
+  const interactive = onClick
+    ? {
+        role: "button" as const,
+        tabIndex: 0,
+        onClick,
+        onKeyDown: (e: React.KeyboardEvent) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            onClick();
+          }
+        },
+      }
+    : {};
   return (
-    <article className="neighborhood-card min-w-0" data-index={index}>
+    <article className={`neighborhood-card min-w-0 ${onClick ? "cursor-pointer" : ""}`} data-index={index} {...interactive}>
       <div className="neighborhood-image-wrap">
         {n.image && !broken ? (
           <img
@@ -142,7 +159,7 @@ export function NeighborhoodCard({
     </article>
   );
 }
-function PlaceCard({ p }: { p: Place }) {
+function PlaceCard({ p, onClick }: { p: Place; onClick?: () => void }) {
   const Icon =
     p.category === "Cafe"
       ? Coffee
@@ -152,8 +169,21 @@ function PlaceCard({ p }: { p: Place }) {
           ? ShoppingBag
           : Utensils;
   const price = p.tags.includes("budget") ? "$" : "$$";
+  const interactive = onClick
+    ? {
+        role: "button" as const,
+        tabIndex: 0,
+        onClick,
+        onKeyDown: (e: React.KeyboardEvent) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            onClick();
+          }
+        },
+      }
+    : {};
   return (
-    <article className="flex gap-4 rounded-2xl border p-5">
+    <article className={`flex gap-4 rounded-2xl border p-5 ${onClick ? "cursor-pointer" : ""}`} {...interactive}>
       <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-secondary">
         <Icon className="h-4 w-4" />
       </div>
@@ -264,6 +294,20 @@ export function Timeline({ plan, city, visiting = false }: { plan: AgentResult["
 }
 export function AnswerCard({ r, onChooseCity }: { r: AgentResult; onChooseCity?: (name: string) => void }) {
   const [requestState, setRequestState] = useState<"idle" | "saving" | "saved" | "error">("idle");
+  const [selected, setSelected] = useState<{ id: string; tick: number } | null>(null);
+  const mapRef = useRef<HTMLDivElement>(null);
+  const spots: MapSpot[] = [
+    ...r.neighborhoods
+      .filter((n) => typeof n.lat === "number" && typeof n.lng === "number")
+      .map((n) => ({ id: spotId("neighborhood", n.name), name: n.name, area: `${r.city} · ${n.borough}`, kind: "neighborhood" as const, lat: n.lat!, lng: n.lng!, image: n.image && n.image.length ? n.image : undefined, imageAlt: n.imageAlt })),
+    ...r.places
+      .filter((p) => typeof p.lat === "number" && typeof p.lng === "number")
+      .map((p) => ({ id: spotId("place", p.name), name: p.name, area: p.neighborhood, kind: "place" as const, lat: p.lat!, lng: p.lng! })),
+  ];
+  const selectSpot = (id: string) => {
+    setSelected({ id, tick: Date.now() });
+    mapRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+  };
   const requestCity = async () => {
     const city = resolveCity(r.city)?.city;
     if (!city || requestState === "saving" || requestState === "saved") return;
@@ -304,7 +348,7 @@ export function AnswerCard({ r, onChooseCity }: { r: AgentResult; onChooseCity?:
         </h2>
         <div className="grid gap-7 md:grid-cols-3">
           {r.neighborhoods.map((n, i) => (
-            <NeighborhoodCard key={n.name} n={n} city={r.city} index={i} />
+            <NeighborhoodCard key={n.name} n={n} city={r.city} index={i} onClick={typeof n.lat === "number" ? () => selectSpot(spotId("neighborhood", n.name)) : undefined} />
           ))}
         </div>
       </div>}
@@ -314,9 +358,15 @@ export function AnswerCard({ r, onChooseCity }: { r: AgentResult; onChooseCity?:
         </h2>
         <div className="grid gap-4 sm:grid-cols-2">
           {r.places.map((p) => (
-            <PlaceCard key={p.name} p={p} />
+            <PlaceCard key={p.name} p={p} onClick={typeof p.lat === "number" ? () => selectSpot(spotId("place", p.name)) : undefined} />
           ))}
         </div>
+      </div>}
+      {spots.length > 0 && <div ref={mapRef} className="scroll-mt-28">
+        <h2 className="mb-6 font-display text-4xl">
+          Your {r.city} <em>on the map.</em>
+        </h2>
+        <CityMap spots={spots} selectedId={selected?.id ?? null} focusTick={selected?.tick ?? 0} onSelect={selectSpot} />
       </div>}
       <Timeline plan={r.plan} city={r.city} visiting={r.trip === "visiting"} />
       <Collapsible title="Agent steps">

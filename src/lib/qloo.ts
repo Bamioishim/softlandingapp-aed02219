@@ -129,7 +129,7 @@ export async function queryQloo(input: z.infer<typeof agentInput>, key: string |
     const rows = open.sort((a, b) => termScore(b) * 10 + prefScore(b) - (termScore(a) * 10 + prefScore(a)));
     if (!rows.length && !cells.length) return blank(city, "unavailable", steps, prefs.climate);
     const neighborhoodName = (p: Entity) => p.properties?.locality?.neighborhood?.name ?? p.properties?.neighborhood;
-    const places: Place[] = rows.slice(0, 6).map((p) => ({ name: p.name, category: p.properties?.primary_genre?.name ?? "Place", neighborhood: neighborhoodName(p) ?? city, tags: (p.tags ?? []).map((t) => t.name), reason: p.properties?.description ?? `Recommended by Qloo in ${city}.` }));
+    const places: Place[] = rows.slice(0, 6).map((p) => ({ name: p.name, category: p.properties?.primary_genre?.name ?? "Place", neighborhood: neighborhoodName(p) ?? city, tags: (p.tags ?? []).map((t) => t.name), reason: p.properties?.description ?? `Recommended by Qloo in ${city}.`, lat: p.location?.lat, lng: p.location?.lon }));
     const neighborhoods = new Map<string, NeighborhoodMatch>();
     for (const p of rows) {
       const name = neighborhoodName(p);
@@ -143,7 +143,8 @@ export async function queryQloo(input: z.infer<typeof agentInput>, key: string |
       const tags = (p.tags ?? []).map((t) => t.name);
       const score = typeof affinity === "number" ? Math.round(Math.max(0, Math.min(0.99, affinity)) * 100) : 0;
       const current = neighborhoods.get(name);
-      if (!current || score > current.score) neighborhoods.set(name, { name, borough: city, rent: "$$", rentRange: "Not provided by Qloo", tags, matched: [], score, scoreAvailable: typeof affinity === "number", why: `Qloo recommends ${p.name} here${cells.length ? "; score estimated from the nearest taste heatmap cell" : " based on your taste signals"}.` });
+      if (!current || score > current.score) neighborhoods.set(name, { name, borough: city, rent: "$$", rentRange: "Not provided by Qloo", tags, matched: [], score, scoreAvailable: typeof affinity === "number", lat: p.location?.lat, lng: p.location?.lon, why: `Qloo recommends ${p.name} here${cells.length ? "; score estimated from the nearest taste heatmap cell" : " based on your taste signals"}.` });
+      else if (current.lat === undefined && p.location) { current.lat = p.location.lat; current.lng = p.location.lon; }
     }
     const top = [...neighborhoods.values()].sort((a, b) => b.score - a.score).slice(0, 3);
     // Each card gets a distinct photo from one of its own Qloo places; none means no photo.
