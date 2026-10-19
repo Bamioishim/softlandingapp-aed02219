@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   Check,
   ChevronDown,
@@ -14,6 +14,8 @@ import type { AgentResult, AgentStep, NeighborhoodMatch, Place } from "@/lib/age
 import { Button } from "./Button";
 import { supabase } from "@/integrations/supabase/client";
 import { resolveCity } from "@/lib/cities";
+import { CityMap } from "./CityMap";
+import { spotId, type MapSpot } from "@/lib/map-types";
 
 export function Collapsible({ title, children }: { title: string; children: React.ReactNode }) {
   const [open, setOpen] = useState(false);
@@ -84,17 +86,32 @@ export function NeighborhoodCard({
   n,
   city,
   index = 0,
+  onClick,
 }: {
   n: NeighborhoodMatch;
   city: string;
   index?: number;
+  onClick?: () => void;
 }) {
   // Only the card's own Qloo place photo is shown; without one, a plain cream card with the name.
   const [broken, setBroken] = useState(false);
   useEffect(() => setBroken(false), [n.image]);
   const tags = [...new Set([...n.matched, ...n.tags])].slice(0, 3);
+  const interactive = onClick
+    ? {
+        role: "button" as const,
+        tabIndex: 0,
+        onClick,
+        onKeyDown: (e: React.KeyboardEvent) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            onClick();
+          }
+        },
+      }
+    : {};
   return (
-    <article className="neighborhood-card min-w-0" data-index={index}>
+    <article className={`neighborhood-card min-w-0 ${onClick ? "cursor-pointer" : ""}`} data-index={index} {...interactive}>
       <div className="neighborhood-image-wrap">
         {n.image && !broken ? (
           <img
@@ -142,7 +159,7 @@ export function NeighborhoodCard({
     </article>
   );
 }
-function PlaceCard({ p }: { p: Place }) {
+function PlaceCard({ p, onClick }: { p: Place; onClick?: () => void }) {
   const Icon =
     p.category === "Cafe"
       ? Coffee
@@ -152,8 +169,21 @@ function PlaceCard({ p }: { p: Place }) {
           ? ShoppingBag
           : Utensils;
   const price = p.tags.includes("budget") ? "$" : "$$";
+  const interactive = onClick
+    ? {
+        role: "button" as const,
+        tabIndex: 0,
+        onClick,
+        onKeyDown: (e: React.KeyboardEvent) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            onClick();
+          }
+        },
+      }
+    : {};
   return (
-    <article className="flex gap-4 rounded-2xl border p-5">
+    <article className={`flex gap-4 rounded-2xl border p-5 ${onClick ? "cursor-pointer" : ""}`} {...interactive}>
       <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-secondary">
         <Icon className="h-4 w-4" />
       </div>
