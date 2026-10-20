@@ -6,8 +6,8 @@ export type MapSpot = {
   kind: "neighborhood" | "place";
   lat: number;
   lng: number;
-  image?: string;
-  imageAlt?: string;
+  image?: string | undefined;
+  imageAlt?: string | undefined;
 };
 
 export function spotId(kind: MapSpot["kind"], name: string): string {

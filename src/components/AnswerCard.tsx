@@ -91,7 +91,7 @@ export function NeighborhoodCard({
   n: NeighborhoodMatch;
   city: string;
   index?: number;
-  onClick?: () => void;
+  onClick?: (() => void) | undefined;
 }) {
   // Only the card's own Qloo place photo is shown; without one, a plain cream card with the name.
   const [broken, setBroken] = useState(false);
@@ -159,7 +159,7 @@ export function NeighborhoodCard({
     </article>
   );
 }
-function PlaceCard({ p, onClick }: { p: Place; onClick?: () => void }) {
+function PlaceCard({ p, onClick }: { p: Place; onClick?: (() => void) | undefined }) {
   const Icon =
     p.category === "Cafe"
       ? Coffee
