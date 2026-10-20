@@ -18,3 +18,4 @@
 - [x] Budget/pace only rank/filter results, never sent to Qloo
 - [x] "Isn't available yet": 2-3 hardcoded similar cities (same country/region first; Ilorin -> Lagos, Abuja, Accra)
 - [x] Pick-your-city panel: Moving/Visiting (day-by-day trip plan), Life stage, taste chips (Qloo interests), Climate (ranks similar cities)
+- [x] Map: free OpenStreetMap tiles (no keys); neighborhood and spot cards open their map pin
