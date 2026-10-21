@@ -14,6 +14,8 @@ export type Place = {
   neighborhood: string;
   tags: string[];
   reason: string;
+  image?: string | undefined;
+  imageAlt?: string | undefined;
   lat?: number | undefined;
   lng?: number | undefined;
 };

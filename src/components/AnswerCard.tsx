@@ -169,6 +169,8 @@ function PlaceCard({ p, onClick }: { p: Place; onClick?: (() => void) | undefine
           ? ShoppingBag
           : Utensils;
   const price = p.tags.includes("budget") ? "$" : "$$";
+  const [broken, setBroken] = useState(false);
+  useEffect(() => setBroken(false), [p.image]);
   const interactive = onClick
     ? {
         role: "button" as const,
@@ -184,9 +186,20 @@ function PlaceCard({ p, onClick }: { p: Place; onClick?: (() => void) | undefine
     : {};
   return (
     <article className={`flex gap-4 rounded-2xl border p-5 ${onClick ? "cursor-pointer" : ""}`} {...interactive}>
-      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-secondary">
-        <Icon className="h-4 w-4" />
-      </div>
+      {p.image && !broken ? (
+        <img
+          src={p.image}
+          alt={p.imageAlt ?? p.name}
+          className="h-16 w-16 shrink-0 rounded-2xl object-cover"
+          loading="lazy"
+          decoding="async"
+          onError={() => setBroken(true)}
+        />
+      ) : (
+        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-secondary">
+          <Icon className="h-4 w-4" />
+        </div>
+      )}
       <div className="min-w-0 flex-1">
         <div className="flex justify-between gap-2">
           <h4 className="text-2xl leading-none">{p.name}</h4>
@@ -292,6 +305,47 @@ export function Timeline({ plan, city, visiting = false }: { plan: AgentResult["
     </section>
   );
 }
+function DecisionPanel({ r }: { r: AgentResult }) {
+  const tastes = [...new Set(r.neighborhoods.flatMap((n) => n.matched))].slice(0, 6);
+  const qlooCalls = r.steps.filter((s) => s.label.startsWith("Qloo") && !s.label.includes("failed") && !s.label.includes("skipped")).length;
+  const picks = r.neighborhoods.map((n) => n.name);
+  const rows = [
+    {
+      title: "Your tastes",
+      body: tastes.length
+        ? `You told us you love ${tastes.map(label).join(", ").toLowerCase()} — that became the taste profile we searched with.`
+        : "We turned what you told us into a taste profile to search with.",
+    },
+    {
+      title: "Qloo's data",
+      body: `We asked Qloo's taste AI for places in ${r.city} that match that profile${qlooCalls ? ` (${qlooCalls} live Qloo ${qlooCalls === 1 ? "call" : "calls"})` : ""}, then ranked what came back by how well it fits you.`,
+    },
+    {
+      title: "Your picks",
+      body: picks.length
+        ? `That's how ${picks.join(", ")} rose to the top, along with ${r.places.length} spots we think you'll love.`
+        : `That's how these ${r.places.length} spots rose to the top for you.`,
+    },
+  ];
+  return (
+    <section className="rounded-2xl border p-6" aria-label="How Soft Landing decided">
+      <p className="eyebrow text-muted-foreground">How Soft Landing decided</p>
+      <ol className="mt-5 space-y-5">
+        {rows.map((row, i) => (
+          <li key={row.title} className="flex gap-4">
+            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-secondary font-display text-sm">
+              {i + 1}
+            </span>
+            <div>
+              <h3 className="font-display text-xl">{row.title}</h3>
+              <p className="mt-1 text-[13px] leading-relaxed text-muted-foreground">{row.body}</p>
+            </div>
+          </li>
+        ))}
+      </ol>
+    </section>
+  );
+}
 export function AnswerCard({ r, onChooseCity }: { r: AgentResult; onChooseCity?: (name: string) => void }) {
   const [requestState, setRequestState] = useState<"idle" | "saving" | "saved" | "error">("idle");
   const [selected, setSelected] = useState<{ id: string; tick: number } | null>(null);
@@ -342,6 +396,7 @@ export function AnswerCard({ r, onChooseCity }: { r: AgentResult; onChooseCity?:
           </p>
         )}
       </div>
+      {r.source === "qloo" && <DecisionPanel r={r} />}
       {r.neighborhoods.length > 0 && <div>
         <h2 className="mb-6 font-display text-4xl">
           Neighborhoods that <em>get you.</em>
