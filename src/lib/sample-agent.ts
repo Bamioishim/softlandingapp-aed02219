@@ -65,7 +65,9 @@ export async function runSampleAgent(
       + (prefs.budget === "low" && p.tags.includes("budget") ? 2 : 0)
       + (prefs.pace === "quiet" && p.tags.includes("quiet") ? 2 : 0)
       + (prefs.pace === "energetic" && p.tags.includes("nightlife") ? 2 : 0);
-    const places = picks.sort((a, b) => rank(b) - rank(a)).map((p) => ({ ...p, neighborhood: city, reason: "Built-in sample idea, not a verified place in this city." }));
+    const samplePhoto = (p: (typeof picks)[number], i: number) =>
+      p.category === "Cafe" ? CAFE_PHOTO : p.category === "Restaurant" ? FOOD_PHOTO : cityPhoto(city, i);
+    const places = picks.sort((a, b) => rank(b) - rank(a)).map((p, i) => ({ ...p, neighborhood: city, reason: "Built-in sample idea, not a verified place in this city.", image: samplePhoto(p, i), imageAlt: `Sample photo for a ${p.name.toLowerCase()} in ${city}` }));
     const visiting = prefs.trip === "visiting";
     const plan = visiting
       ? [0, 1, 2].map((i) => ({ week: `Day ${i + 1}`, items: [`Explore ${city} on foot`, `Look for a ${places[i * 2]?.name.toLowerCase()}`, `Look for a ${places[i * 2 + 1]?.name.toLowerCase()}`] }))
