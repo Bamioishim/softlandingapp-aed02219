@@ -1,5 +1,6 @@
 import { CITY_DATA } from "./city-data";
 import { resolveCity } from "./cities";
+import { CAFE_PHOTO, FOOD_PHOTO, cityPhoto } from "./photos";
 import type { Prefs } from "./qloo";
 
 import type { Mode, AgentStep, AgentResult, NeighborhoodMatch } from "./agent-types";
