@@ -396,6 +396,7 @@ export function AnswerCard({ r, onChooseCity }: { r: AgentResult; onChooseCity?:
           </p>
         )}
       </div>
+      {r.source === "qloo" && <DecisionPanel r={r} />}
       {r.neighborhoods.length > 0 && <div>
         <h2 className="mb-6 font-display text-4xl">
           Neighborhoods that <em>get you.</em>
