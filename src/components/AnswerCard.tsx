@@ -169,6 +169,8 @@ function PlaceCard({ p, onClick }: { p: Place; onClick?: (() => void) | undefine
           ? ShoppingBag
           : Utensils;
   const price = p.tags.includes("budget") ? "$" : "$$";
+  const [broken, setBroken] = useState(false);
+  useEffect(() => setBroken(false), [p.image]);
   const interactive = onClick
     ? {
         role: "button" as const,
@@ -184,9 +186,20 @@ function PlaceCard({ p, onClick }: { p: Place; onClick?: (() => void) | undefine
     : {};
   return (
     <article className={`flex gap-4 rounded-2xl border p-5 ${onClick ? "cursor-pointer" : ""}`} {...interactive}>
-      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-secondary">
-        <Icon className="h-4 w-4" />
-      </div>
+      {p.image && !broken ? (
+        <img
+          src={p.image}
+          alt={p.imageAlt ?? p.name}
+          className="h-16 w-16 shrink-0 rounded-2xl object-cover"
+          loading="lazy"
+          decoding="async"
+          onError={() => setBroken(true)}
+        />
+      ) : (
+        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-secondary">
+          <Icon className="h-4 w-4" />
+        </div>
+      )}
       <div className="min-w-0 flex-1">
         <div className="flex justify-between gap-2">
           <h4 className="text-2xl leading-none">{p.name}</h4>
