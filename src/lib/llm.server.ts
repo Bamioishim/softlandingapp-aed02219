@@ -72,7 +72,7 @@ export async function generateLlmRecommendations(input: z.infer<typeof agentInpu
   const resolved = resolveCity(cityName);
   if (!resolved) throw new Error("Choose a recognized city before finding matches");
   const city = resolved.city;
-  const apiKey = process.env.LOVABLE_API_KEY;
+  const apiKey = process.env['LOVABLE_API_KEY'];
   if (!apiKey) throw new Error("Lovable AI is not configured");
   const { provider } = createLovableAiGatewayResponses(apiKey);
 
