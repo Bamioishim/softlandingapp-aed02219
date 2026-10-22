@@ -30,7 +30,7 @@ export type AgentResult = {
   mode: Mode;
   city: string;
   spoken: string;
-  source?: "qloo" | "sample";
+  source?: "qloo" | "sample" | "llm";
   trip?: "moving" | "visiting";
   status?: "ok" | "unavailable" | "error";
   alternatives?: { name: string; reason: string }[];

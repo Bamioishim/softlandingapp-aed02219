@@ -14,7 +14,9 @@ export function createLovableAiGatewayRunIdFetch(initialRunId?: string) {
 
   const publishRunId = (value?: string) => {
     const nextRunId = value?.trim() || undefined;
-    if (!runId && nextId(nextId())) runId = nextId();
+    if (!runId && nextRunId) {
+      runId = nextRunId;
+    }
     if (!runIdResolved) {
       runIdResolved = true;
       resolveRunId(runId);
@@ -43,9 +45,6 @@ export function createLovableAiGatewayRunIdFetch(initialRunId?: string) {
   };
 }
 
-function nextId(value: string) {
-  return value;
-}
 
 export function createLovableAiGatewayResponses(apiKey: string) {
   const runIdFetch = createLovableAiGatewayRunIdFetch();
