@@ -23,6 +23,7 @@ import { CityPicker } from "@/components/CityPicker";
 import { useSpeechRecognition, useSpeechSynthesis } from "@/hooks/use-speech";
 import { AnswerCard, NeighborhoodCard, StepList, Timeline, Collapsible } from "@/components/AnswerCard";
 import { Button } from "@/components/Button";
+import { AccountButton } from "@/components/Account";
 import { cityPhoto, DEFAULT_PANEL_PHOTO, HERO_PHOTOS } from "@/lib/photos";
 
 export const Route = createFileRoute("/")({
@@ -281,6 +282,7 @@ function Index() {
               if (!started) void search(input.trim() || chips.join(", ") || "local favorites", r, mode);
             }} />
           </div>
+          <AccountButton />
           <Button
             variant="icon"
             aria-label="Open menu"
