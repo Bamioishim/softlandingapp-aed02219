@@ -1,6 +1,7 @@
 // Finds a real photo for each neighborhood: Wikipedia image search for "<neighborhood> <city>",
 // then a city photo. Never repeats a photo across cards.
 import { cityPhoto, CITY_PHOTOS } from "./photos";
+import { CATEGORY_POOLS, photoCategory } from "./category-photos";
 
 type Fetcher = (url: string) => Promise<{ ok: boolean; json: () => Promise<unknown> }>;
 
@@ -23,8 +24,9 @@ export async function fillNeighborhoodImages<T extends { name: string; image?: s
   city: string,
   neighborhoods: T[],
   fetcher: Fetcher,
+  used: Set<string> = new Set(),
 ): Promise<T[]> {
-  const used = new Set(neighborhoods.map((n) => n.image).filter(Boolean) as string[]);
+  for (const n of neighborhoods) if (n.image) used.add(n.image);
   const results = await Promise.all(neighborhoods.map((n) => (n.image ? Promise.resolve([]) : wikipediaSearchImages(`${n.name} ${city}`, fetcher))));
   const cityCount = Math.max(CITY_PHOTOS[city]?.length ?? 2, 1);
   let cityIdx = 0;
@@ -43,5 +45,45 @@ export async function fillNeighborhoodImages<T extends { name: string; image?: s
       }
     }
     return n; // no unused photo left: keep the plain name card rather than repeat one
+  });
+}
+
+/**
+ * Gives each spot a distinct real photo: Wikipedia search "<spot> <city>", then "<spot>", then a
+ * rotating per-category pool. `used` is shared with the neighborhood cards so nothing repeats on the page.
+ */
+export async function fillPlaceImages<T extends { name: string; category?: string | undefined; image?: string | undefined; imageAlt?: string | undefined }>(
+  city: string,
+  places: T[],
+  fetcher: Fetcher,
+  used: Set<string> = new Set(),
+): Promise<T[]> {
+  const results = await Promise.all(
+    places.map(async (p) => {
+      const first = await wikipediaSearchImages(`${p.name} ${city}`, fetcher);
+      return first.length ? first : wikipediaSearchImages(p.name, fetcher);
+    }),
+  );
+  const cursors: Record<string, number> = {};
+  return places.map((p, i) => {
+    const wiki = results[i]!.find((src) => !used.has(src));
+    if (wiki) {
+      used.add(wiki);
+      return { ...p, image: wiki, imageAlt: `${p.name}, ${city}` };
+    }
+    const key = photoCategory(p.name, p.category);
+    const order = [key, ...Object.keys(CATEGORY_POOLS).filter((k) => k !== key)];
+    for (const k of order) {
+      const pool = CATEGORY_POOLS[k]!;
+      for (let t = 0; t < pool.length; t++) {
+        const idx = (cursors[k] = (cursors[k] ?? 0) + 1) - 1;
+        const src = pool[idx % pool.length]!;
+        if (!used.has(src)) {
+          used.add(src);
+          return { ...p, image: src, imageAlt: `${k === "place" ? "Street" : k} in ${city}` };
+        }
+      }
+    }
+    return p;
   });
 }

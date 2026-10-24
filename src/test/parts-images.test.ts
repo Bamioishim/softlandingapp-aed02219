@@ -1,4 +1,6 @@
 import { describe, expect, it } from "vitest";
+import { fillPlaceImages } from "@/lib/neighborhood-images";
+import { photoCategory } from "@/lib/category-photos";
 import { areaLabel, joinParts } from "@/lib/parts";
 import { fillNeighborhoodImages } from "@/lib/neighborhood-images";
 import { cityPhoto } from "@/lib/photos";
@@ -35,5 +37,35 @@ describe("LLM-only neighborhood photos", () => {
   it("falls back to city photos when Wikipedia fails", async () => {
     const out = await fillNeighborhoodImages("London", [{ name: "A" } as { name: string; image?: string }], async () => { throw new Error("offline"); });
     expect(out[0]!.image).toBe(cityPhoto("London", 0));
+  });
+});
+
+describe("fillPlaceImages", () => {
+  type P = { name: string; category?: string; image?: string; imageAlt?: string };
+  const none = async () => ({ ok: true, json: async () => ({}) });
+  it("never repeats a fallback photo across many same-category spots or with neighborhoods", async () => {
+    const used = new Set<string>(["https://x/hood.jpg"]);
+    const ps: P[] = Array.from({ length: 8 }, (_, i) => ({ name: `Spot ${i}`, category: "Cafe" }));
+    const out = await fillPlaceImages("London", ps, none, used);
+    const imgs = out.map((p) => p.image);
+    expect(imgs.every(Boolean)).toBe(true);
+    expect(new Set(imgs).size).toBe(8);
+    expect(imgs).not.toContain("https://x/hood.jpg");
+  });
+  it("uses Wikipedia first, retrying with the bare name, and skips svg/logo", async () => {
+    const calls: string[] = [];
+    const f = async (url: string) => {
+      calls.push(decodeURIComponent(url));
+      const bare = !url.includes("London");
+      return { ok: true, json: async () => ({ query: { pages: bare ? { 1: { index: 1, thumbnail: { source: "https://w/logo.png" } }, 2: { index: 2, thumbnail: { source: "https://w/real.jpg" } } } : {} } }) };
+    };
+    const [p] = await fillPlaceImages("London", [{ name: "Ronnie Scott's" } as P], f);
+    expect(p!.image).toBe("https://w/real.jpg");
+    expect(calls.length).toBe(2);
+  });
+  it("maps names to category pools", () => {
+    expect(photoCategory("Hyde Park", "Place")).toBe("park");
+    expect(photoCategory("Tate Modern Museum", "Place")).toBe("museum");
+    expect(photoCategory("Blue Note", "Venue")).toBe("music");
   });
 });

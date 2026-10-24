@@ -7,7 +7,7 @@ import { resolveCity } from "./cities";
 import { agentInput, type Prefs } from "./qloo";
 import { buildLlmResult, type LlmOutput } from "./llm-map";
 import type { AgentResult } from "./agent-types";
-import { fillNeighborhoodImages } from "./neighborhood-images";
+import { fillNeighborhoodImages, fillPlaceImages } from "./neighborhood-images";
 
 const outputSchema = z
   .object({
@@ -106,7 +106,14 @@ export async function generateLlmRecommendations(input: z.infer<typeof agentInpu
   }
   const aiMs = performance.now() - start;
   const r = buildLlmResult({ city: city.name, tastes: tasteLabels(message, prefs), prefs, output, aiMs });
-  const wikiFetch = (url: string) => fetch(url, { headers: { "User-Agent": "SoftLanding/1.0 (softlandingapp.lovable.app)" }, signal: AbortSignal.timeout(5000) });
-  r.neighborhoods = await fillNeighborhoodImages(r.city, r.neighborhoods, wikiFetch);
+  const wikiFetch = (url: string) => fetch(url, { headers: { "User-Agent": "SoftLanding/1.0 (softlandingapp.lovable.app)" }, signal: AbortSignal.timeout(3000) });
+  // Neighborhood and spot lookups run in parallel and share one set, so no photo repeats on the page.
+  const used = new Set<string>();
+  const [neighborhoods, places] = await Promise.all([
+    fillNeighborhoodImages(r.city, r.neighborhoods, wikiFetch, used),
+    fillPlaceImages(r.city, r.places, wikiFetch, used),
+  ]);
+  r.neighborhoods = neighborhoods;
+  r.places = places;
   return r;
 }
