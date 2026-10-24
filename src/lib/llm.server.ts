@@ -1,6 +1,7 @@
 // Server-only: the LLM-only ("LLM-only") recommendation engine.
 // Calls the Lovable AI Gateway with the resolved default model and consumes the streamed structured output here.
 import { streamText, Output, NoObjectGeneratedError } from "ai";
+import { createOpenAI } from "@ai-sdk/openai";
 import { z } from "zod";
 import { createLovableAiGatewayResponses } from "./gateway.server";
 import { resolveCity } from "./cities";
@@ -75,26 +76,38 @@ export async function generateLlmRecommendations(input: z.infer<typeof agentInpu
   const resolved = resolveCity(cityName);
   if (!resolved) throw new Error("Choose a recognized city before finding matches");
   const city = resolved.city;
+  // Prefer Google Gemini (OpenAI-compatible endpoint) when GEMINI_API_KEY is set; otherwise use the Lovable AI Gateway.
+  const geminiKey = process.env['GEMINI_API_KEY'];
   const apiKey = process.env['LOVABLE_API_KEY'];
-  if (!apiKey) throw new Error("Lovable AI is not configured");
-  const { provider } = createLovableAiGatewayResponses(apiKey);
+  if (!geminiKey && !apiKey) throw new Error("LLM-only mode is not configured");
 
   const start = performance.now();
-  const result = streamText({
-    model: provider.responses("openai/gpt-6-astra"),
+  const common = {
     system: SYSTEM_PROMPT,
-    messages: [{ role: "user", content: userPrompt(city, message, prefs) }],
+    messages: [{ role: "user" as const, content: userPrompt(city, message, prefs) }],
     output: Output.object({ schema: outputSchema }),
-    providerOptions: {
-      openai: {
-        store: false,
-        forceReasoning: true,
-        reasoningEffort: "medium",
-        reasoningSummary: "auto",
-        include: ["reasoning.encrypted_content"],
-      },
-    },
-  });
+  };
+  const result = geminiKey
+    ? streamText({
+        ...common,
+        model: createOpenAI({
+          apiKey: geminiKey,
+          baseURL: "https://generativelanguage.googleapis.com/v1beta/openai",
+        }).chat(process.env['GEMINI_MODEL'] || "gemini-2.5-flash"),
+      })
+    : streamText({
+        ...common,
+        model: createLovableAiGatewayResponses(apiKey!).provider.responses("openai/gpt-6-astra"),
+        providerOptions: {
+          openai: {
+            store: false,
+            forceReasoning: true,
+            reasoningEffort: "medium",
+            reasoningSummary: "auto",
+            include: ["reasoning.encrypted_content"],
+          },
+        },
+      });
   let output: LlmOutput;
   try {
     output = (await result.output) as LlmOutput;
