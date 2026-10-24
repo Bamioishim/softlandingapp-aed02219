@@ -122,10 +122,9 @@ export async function generateLlmRecommendations(input: z.infer<typeof agentInpu
   const wikiFetch = (url: string) => fetch(url, { headers: { "User-Agent": "SoftLanding/1.0 (softlanding-mauve.vercel.app)" }, signal: AbortSignal.timeout(6000) });
   // Neighborhood and spot lookups run in parallel and share one set, so no photo repeats on the page.
   const used = new Set<string>();
-  const [neighborhoods, places] = await Promise.all([
-    fillNeighborhoodImages(r.city, r.neighborhoods, wikiFetch, used),
-    fillPlaceImages(r.city, r.places, wikiFetch, used),
-  ]);
+  // Neighborhoods first so their few Wikipedia calls aren't rate-limited behind the spot lookups.
+  const neighborhoods = await fillNeighborhoodImages(r.city, r.neighborhoods, wikiFetch, used);
+  const places = await fillPlaceImages(r.city, r.places, wikiFetch, used);
   r.neighborhoods = neighborhoods;
   r.places = places;
   return r;
