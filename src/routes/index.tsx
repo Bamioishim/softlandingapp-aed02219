@@ -24,6 +24,10 @@ import { useSpeechRecognition, useSpeechSynthesis } from "@/hooks/use-speech";
 import { AnswerCard, NeighborhoodCard, StepList, Timeline, Collapsible } from "@/components/AnswerCard";
 import { Button } from "@/components/Button";
 import { AccountButton } from "@/components/Account";
+
+// Optional sign-in is hidden until email auth is enabled on the backend.
+// Flip to true to bring back the account button and its dialog.
+export const SHOW_SIGNIN = false;
 import { cityPhoto, DEFAULT_PANEL_PHOTO, HERO_PHOTOS } from "@/lib/photos";
 
 export const Route = createFileRoute("/")({
@@ -290,7 +294,7 @@ function Index() {
               if (!started) void search(input.trim() || chips.join(", ") || "local favorites", r, mode);
             }} />
           </div>
-          <AccountButton />
+          {SHOW_SIGNIN && <AccountButton />}
           <Button
             variant="icon"
             aria-label="Open menu"
