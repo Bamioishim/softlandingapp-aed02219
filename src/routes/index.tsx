@@ -516,9 +516,9 @@ function Index() {
                       </button>
                     ))}
                   </div>
-                  <Button type="submit" form="search-form" className="find-btn bg-primary text-primary-foreground">
+                  <button type="submit" form="search-form" className="find-btn">
                     Find my neighborhoods <ArrowRight className="h-4 w-4" />
-                  </Button>
+                  </button>
                 </div>
                 {snapNotice && (
                   <p className="mt-3 rounded-xl bg-card p-3 text-xs" role="status">
