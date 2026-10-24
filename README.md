@@ -1,4 +1,4 @@
-<p align="center"><img src="public/logo.svg" alt="Soft Landing logo" width="96" height="96"></p>
+<p align="center"><img src="public/logo-wordmark.svg" alt="Soft Landing" width="420"></p>
 
 # Soft Landing
 
