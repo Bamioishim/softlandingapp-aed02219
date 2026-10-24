@@ -21,11 +21,11 @@ export function CityPicker({
   const [error, setError] = useState("");
   const boxRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
-    const close = (e: MouseEvent) => {
+    const close = (e: PointerEvent) => {
       if (!boxRef.current?.contains(e.target as Node)) setOpen(false);
     };
-    document.addEventListener("mousedown", close);
-    return () => document.removeEventListener("mousedown", close);
+    document.addEventListener("pointerdown", close);
+    return () => document.removeEventListener("pointerdown", close);
   }, []);
   const pick = (name: string, search = false) => {
     let r = resolveCity(name);
@@ -71,7 +71,15 @@ export function CityPicker({
           placeholder={value?.city.name ?? "Pick a city"}
           autoComplete="off"
         />
-        <ChevronDown className="h-3 w-3 shrink-0 text-muted-foreground" />
+        <button
+          type="button"
+          aria-label={open ? "Hide cities" : "Show cities"}
+          aria-expanded={open}
+          onClick={() => { setError(""); setOpen((o) => !o); }}
+          className="-my-2 -mr-2 flex h-11 w-11 shrink-0 cursor-pointer touch-manipulation items-center justify-center rounded-full text-muted-foreground hover:text-foreground"
+        >
+          <ChevronDown className={`h-4 w-4 transition-transform ${open ? "rotate-180" : ""}`} />
+        </button>
       </div>
       {error && <p role="alert" className="city-picker-dropdown absolute left-0 top-full z-50 mt-3 w-72 max-w-[80vw] rounded-xl p-3 text-xs text-foreground">{error}</p>}
       {open && !error && (

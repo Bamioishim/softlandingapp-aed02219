@@ -6,7 +6,7 @@ import { z } from "zod";
 import { createLovableAiGatewayResponses } from "./gateway.server";
 import { resolveCity } from "./cities";
 import { agentInput, type Prefs } from "./qloo";
-import { buildLlmResult, type LlmOutput } from "./llm-map";
+import { buildLlmResult, nearCity, type LlmOutput } from "./llm-map";
 import type { AgentResult } from "./agent-types";
 import { fillNeighborhoodImages, fillPlaceImages } from "./neighborhood-images";
 
@@ -23,6 +23,8 @@ const outputSchema = z
             why: z.string(),
             rentBand: z.enum(["$", "$$", "$$$"]),
             matched: z.array(z.string()),
+            lat: z.number(),
+            lng: z.number(),
           })
           .strict(),
       ),
@@ -34,6 +36,8 @@ const outputSchema = z
             category: z.enum(["Cafe", "Restaurant", "Venue", "Shop", "Place"]),
             neighborhood: z.string(),
             reason: z.string(),
+            lat: z.number(),
+            lng: z.number(),
           })
           .strict(),
       ),
@@ -51,6 +55,7 @@ Rules:
 - plan: exactly 3 entries labeled "Day 1", "Day 2", "Day 3" for visiting trips (3 short checklist items each weaving in the recommended places), or exactly 4 entries labeled "Week 1" through "Week 4" for moves (3-4 short settling-in items each, respecting the life stage).
 - summary: 1-2 sentences explaining the picks.
 - story: 2-4 sentences of natural, flowing prose about the city and why these picks fit, e.g. "Los Angeles is known for its lively nightlife and taco trucks, so we leaned toward Silver Lake…". No lists or step numbers.
+- lat/lng: the approximate center coordinates (decimal degrees) of each neighborhood and place, inside the city.
 Keep every string short and plain.`;
 
 function userPrompt(city: { name: string; country: string }, message: string, prefs: Prefs) {
@@ -118,14 +123,32 @@ export async function generateLlmRecommendations(input: z.infer<typeof agentInpu
     throw error;
   }
   const aiMs = performance.now() - start;
-  const r = buildLlmResult({ city: city.name, tastes: tasteLabels(message, prefs), prefs, output, aiMs });
+  const r = buildLlmResult({ center: { lat: city.lat, lng: city.lng }, city: city.name, tastes: tasteLabels(message, prefs), prefs, output, aiMs });
   const wikiFetch = (url: string) => fetch(url, { headers: { "User-Agent": "SoftLanding/1.0 (softlanding-mauve.vercel.app)" }, signal: AbortSignal.timeout(6000) });
   // Neighborhood and spot lookups run in parallel and share one set, so no photo repeats on the page.
   const used = new Set<string>();
   // Neighborhoods first so their few Wikipedia calls aren't rate-limited behind the spot lookups.
   const neighborhoods = await fillNeighborhoodImages(r.city, r.neighborhoods, wikiFetch, used);
   const places = await fillPlaceImages(r.city, r.places, wikiFetch, used);
+  // Neighborhoods whose AI coordinates were missing or off-city: geocode with OpenStreetMap Nominatim.
+  for (const n of neighborhoods) {
+    if (typeof n.lat === "number") continue;
+    const geo = await geocode(`${n.name}, ${city.name}, ${city.country}`, wikiFetch);
+    if (geo && nearCity(geo, city)) { n.lat = geo.lat; n.lng = geo.lng; }
+  }
   r.neighborhoods = neighborhoods;
   r.places = places;
   return r;
+}
+
+async function geocode(q: string, f: (url: string) => Promise<Response>): Promise<{ lat: number; lng: number } | null> {
+  try {
+    const res = await f(`https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${encodeURIComponent(q)}`);
+    if (!res.ok) return null;
+    const rows = (await res.json()) as { lat: string; lon: string }[];
+    const row = rows[0];
+    return row ? { lat: Number(row.lat), lng: Number(row.lon) } : null;
+  } catch {
+    return null;
+  }
 }

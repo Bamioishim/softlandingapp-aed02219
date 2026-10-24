@@ -121,12 +121,45 @@ function haversineKm(a: City, b: City): number {
   return 2 * R * Math.asin(Math.sqrt(h));
 }
 
+// Popularity rank = order in world-cities.json (GeoNames, sorted by population).
+const WORLD_RANK = new Map<string, number>();
+const WORLD_LIST: { city: City; aliases: string[] }[] = [];
+worldCities.forEach((row, i) => {
+  const [aliases, lat, lng, country] = row;
+  if (!Array.isArray(aliases) || typeof lat !== "number" || typeof lng !== "number" || typeof country !== "string") return;
+  const name = aliases[0];
+  if (typeof name !== "string" || WORLD_RANK.has(norm(name))) return;
+  WORLD_RANK.set(norm(name), i);
+  WORLD_LIST.push({ city: { name, lat, lng, country, supported: false }, aliases: aliases.filter((a): a is string => typeof a === "string").map(norm) });
+});
+// Curated cities are the most-travelled destinations: they get a popularity boost.
+const CURATED_BOOST = 50;
+const RANKED: { city: City; aliases: string[]; rank: number }[] = (() => {
+  const byName = new Map<string, { city: City; aliases: string[]; rank: number }>();
+  for (const w of WORLD_LIST) byName.set(w.city.name, { ...w, rank: WORLD_RANK.get(norm(w.city.name))! });
+  for (const c of CITIES) {
+    const prev = byName.get(c.name);
+    const base = prev?.rank ?? WORLD_RANK.get(norm(c.name)) ?? 500;
+    byName.set(c.name, { city: c, aliases: [...new Set([norm(c.name), ...(prev?.aliases ?? [])])], rank: Math.min(base, 0) - CURATED_BOOST + base / 1000 });
+  }
+  return [...byName.values()].sort((a, b) => a.rank - b.rank);
+})();
+
+/** Cities matching the query, most popular first: name prefix, then word/alias prefix, then substring. */
 export function searchCities(query: string, limit = 6): City[] {
   const q = norm(query);
   if (!q) return [];
-  // Curated cities come last so they win the name dedupe over GeoNames entries.
-  const matches = [...new Map([...WORLD_CITY_INDEX.values()].map((c) => [c.name, c])).values(), ...CITIES];
-  return [...new Map(matches.filter((c) => norm(c.name).includes(q) || norm(c.country).includes(q)).map((c) => [c.name, c])).values()].slice(0, limit);
+  const tiers: City[][] = [[], [], [], []];
+  for (const r of RANKED) {
+    const n = norm(r.city.name);
+    const t = n.startsWith(q) ? 0
+      : n.split(/[\s-]+/).some((w) => w.startsWith(q)) || r.aliases.some((a) => a.startsWith(q)) ? 1
+      : n.includes(q) ? 2
+      : norm(r.city.country).startsWith(q) ? 3 : -1;
+    if (t >= 0 && tiers[t]!.length < limit) tiers[t]!.push(r.city);
+    if (tiers[0]!.length >= limit) break;
+  }
+  return tiers.flat().slice(0, limit);
 }
 
 export type CityResolution = {
