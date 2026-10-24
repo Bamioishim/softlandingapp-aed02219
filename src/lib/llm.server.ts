@@ -1,4 +1,4 @@
-// Server-only: the LLM-only ("Without Qloo") recommendation engine.
+// Server-only: the LLM-only ("LLM-only") recommendation engine.
 // Calls the Lovable AI Gateway with the resolved default model and consumes the streamed structured output here.
 import { streamText, Output, NoObjectGeneratedError } from "ai";
 import { z } from "zod";
@@ -11,6 +11,7 @@ import type { AgentResult } from "./agent-types";
 const outputSchema = z
   .object({
     summary: z.string(),
+    story: z.string(),
     neighborhoods: z
       .array(
         z
@@ -47,6 +48,7 @@ Rules:
 - places: exactly 6, each placed in a neighborhood named above or a real district of the city.
 - plan: exactly 3 entries labeled "Day 1", "Day 2", "Day 3" for visiting trips (3 short checklist items each weaving in the recommended places), or exactly 4 entries labeled "Week 1" through "Week 4" for moves (3-4 short settling-in items each, respecting the life stage).
 - summary: 1-2 sentences explaining the picks.
+- story: 2-4 sentences of natural, flowing prose about the city and why these picks fit, e.g. "Los Angeles is known for its lively nightlife and taco trucks, so we leaned toward Silver Lake…". No lists or step numbers.
 Keep every string short and plain.`;
 
 function userPrompt(city: { name: string; country: string }, message: string, prefs: Prefs) {

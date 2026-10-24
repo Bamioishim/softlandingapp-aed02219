@@ -43,11 +43,24 @@ describe("LLM-only mode", () => {
     expect(r.plan.map((p) => p.week)).toEqual(["Week 1", "Week 2", "Week 3", "Week 4"]);
   });
 
-  it("renders the AI-curated label and the not-Qloo-verified note", () => {
+  it("labels the mode LLM-only and never mentions Qloo", () => {
+    const r = buildLlmResult({ city: "Paris", tastes: ["coffee"], prefs: {}, output, aiMs: 900 });
+    const { container } = render(<AnswerCard r={r} />);
+    expect(screen.getByText("LLM-only")).toBeTruthy();
+    expect(screen.getByText("LLM-only suggestions")).toBeTruthy();
+    expect(container.textContent).not.toMatch(/qloo/i);
+  });
+
+  it("shows the model's story as prose in the decision panel", () => {
+    const story = "Paris is known for its cafés. We leaned toward Le Marais.";
+    const r = buildLlmResult({ city: "Paris", tastes: ["coffee"], prefs: {}, output: { ...output, story }, aiMs: 900 });
+    render(<AnswerCard r={r} />);
+    expect(screen.getByTestId("decision-story").textContent).toBe(story);
+  });
+
+  it("labels every lock-in button with the city name", () => {
     const r = buildLlmResult({ city: "Paris", tastes: ["coffee"], prefs: {}, output, aiMs: 900 });
     render(<AnswerCard r={r} />);
-    expect(screen.getByText("AI-curated, without Qloo")).toBeTruthy();
-    expect(screen.getByText(/not Qloo-verified/)).toBeTruthy();
-    expect(screen.queryByText("Sample data, not from Qloo")).toBeNull();
+    expect(screen.getAllByText("Paris it is").length).toBeGreaterThanOrEqual(3);
   });
 });

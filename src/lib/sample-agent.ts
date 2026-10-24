@@ -77,7 +77,7 @@ export async function runSampleAgent(
           { week: "Week 3", items: ["Visit a local market", "Look for a community group"] },
           { week: "Week 4", items: ["Review your housing options", "Build a weekly routine"] },
         ];
-    const summary = `Sample data, not from Qloo. These are generic ideas for ${city}, not verified local recommendations.`;
+    const summary = `${mode === "llm" ? "Sample data, not live LLM-only results." : "Sample data, not from Qloo."} These are generic ideas for ${city}, not verified local recommendations.`;
     await step("Ranked generic built-in samples", 0);
     return { city, mode, source: "sample", status: "ok", trip: prefs.trip ?? "moving", summary, spoken: summary, neighborhoods: [], places, plan, steps };
   }

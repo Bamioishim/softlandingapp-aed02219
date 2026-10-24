@@ -254,7 +254,7 @@ function Index() {
           }}
           className={`rounded-full px-3 py-2 text-[10px] ${mode === m ? "bg-card" : "text-muted-foreground"}`}
         >
-          {m === "qloo" ? "Qloo-grounded" : "Without Qloo"}
+          {m === "qloo" ? "Qloo-grounded" : "LLM-only"}
         </Button>
       ))}
     </div>
@@ -384,8 +384,8 @@ function Index() {
               </div>
               <div className="mt-7 flex items-center justify-center gap-3 text-[10px] text-muted-foreground">
                 <span>A new city. A familiar feeling.</span>
-                <span>—</span>
-                <span>Powered by Qloo Taste AI</span>
+                {mode === "qloo" && <><span>—</span>
+                <span>Powered by Qloo Taste AI</span></>}
               </div>
             </section>
             <section id="pick-city" className="city-panel section-space">
@@ -622,9 +622,9 @@ function Index() {
                         </p>
                         <p role="status" aria-live="polite" className="mb-5 flex items-center gap-3 text-sm" data-testid="search-pending">
                           <span className="h-4 w-4 shrink-0 animate-spin rounded-full border border-foreground border-t-transparent" />
-                          Matching your tastes with Qloo. This can take up to 20 seconds…
+                          {mode === "llm" ? "Matching your taste to your preferences" : "Matching your tastes with Qloo. This can take up to 20 seconds…"}
                         </p>
-                        <Collapsible title="Agent steps"><StepList steps={m.steps} pending /></Collapsible>
+                        <Collapsible title="Agent steps"><StepList steps={m.steps} pending pendingText={mode === "llm" ? "Matching your taste to your preferences" : undefined} /></Collapsible>
                       </div>
                     )}
                   </div>
@@ -683,7 +683,7 @@ function Index() {
       <footer className="section-space flex flex-wrap items-center justify-between gap-5 border-t py-9">
         <span className="font-display text-3xl">Soft Landing</span>
         <div className="flex items-center gap-6 text-[10px] text-muted-foreground">
-          <span>Powered by Qloo Taste AI</span>
+          {mode === "qloo" && <span>Powered by Qloo Taste AI</span>}
           <Button variant="plain" onClick={() => setAbout(true)}>
             About
           </Button>

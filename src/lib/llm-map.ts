@@ -19,6 +19,7 @@ export type LlmPlace = {
 };
 export type LlmOutput = {
   summary: string;
+  story?: string;
   neighborhoods: LlmNeighborhood[];
   places: LlmPlace[];
   plan: { label: string; items: string[] }[];
@@ -74,6 +75,7 @@ export function buildLlmResult(opts: {
     status: "ok",
     trip: prefs.trip ?? "moving",
     summary,
+    ...(output.story ? { story: output.story } : {}),
     spoken: summary,
     neighborhoods,
     places,

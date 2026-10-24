@@ -23,6 +23,8 @@ export type AgentStep = { label: string; ms: number };
 export type NeighborhoodMatch = Neighborhood & { image?: string; imageAlt?: string; scoreAvailable?: boolean; score: number; matched: string[]; rentRange: string };
 export type AgentResult = {
   summary: string;
+  /** 2–4 sentence prose for the "How Soft Landing decided" panel. */
+  story?: string;
   neighborhoods: NeighborhoodMatch[];
   places: Place[];
   plan: { week: string; items: string[] }[];

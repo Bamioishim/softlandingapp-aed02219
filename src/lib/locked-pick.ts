@@ -7,6 +7,8 @@ export type LockedPick = {
   score: number | null;
   tastes: string[];
   rentRange: string;
+  /** Destination photo used as the card background (neighborhood image, else a city photo). */
+  image?: string;
   lockedAt: string;
 };
 
