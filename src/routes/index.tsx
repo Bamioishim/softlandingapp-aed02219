@@ -21,7 +21,6 @@ import { flagForCountry, resolveCity, type CityResolution } from "@/lib/cities";
 import { CITY_DATA } from "@/lib/city-data";
 import { CityPicker } from "@/components/CityPicker";
 import { useSpeechRecognition, useSpeechSynthesis } from "@/hooks/use-speech";
-import EXAMPLE_NYC_JSON from "@/lib/example-nyc.json";
 import { AnswerCard, NeighborhoodCard, StepList, Timeline, Collapsible } from "@/components/AnswerCard";
 import { Button } from "@/components/Button";
 import { AccountButton } from "@/components/Account";
@@ -30,9 +29,6 @@ import { AccountButton } from "@/components/Account";
 // Flip to true to bring back the account button and its dialog.
 export const SHOW_SIGNIN = false;
 import { cityPhoto, DEFAULT_PANEL_PHOTO, HERO_PHOTOS } from "@/lib/photos";
-
-// Bundled snapshot of a real Qloo result, shown before the first search (no API call on load).
-const EXAMPLE_NYC = EXAMPLE_NYC_JSON as unknown as AgentResult;
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -520,16 +516,12 @@ function Index() {
               </div>
             </section>
             {!city && (
-              <section id="how-it-works" className="section-space">
-                <div data-testid="example-result">
-                  <p className="eyebrow mb-5 text-muted-foreground">Example · New York · “jazz, coffee, bookstores” · real Qloo result</p>
-                  <AnswerCard r={EXAMPLE_NYC} onChooseCity={() => focusDestination()} />
-                </div>
-                <div className="mt-10 text-center">
-                  <Button onClick={focusDestination} className="text-xs">
-                    Try your own city <ArrowRight className="h-4 w-4" />
-                  </Button>
-                </div>
+              <section id="how-it-works" className="section-space text-center" role="status">
+                <Globe2 className="mx-auto mb-5 h-6 w-6 text-muted-foreground" aria-hidden="true" />
+                <h2 className="section-title">Pick a city to see your matches</h2>
+                <Button onClick={focusDestination} className="mt-6 text-xs">
+                  Pick a city <ArrowRight className="h-4 w-4" />
+                </Button>
               </section>
             )}
             {city && preview.length > 0 && <section id="how-it-works" className="section-space">
