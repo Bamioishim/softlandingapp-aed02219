@@ -16,6 +16,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { resolveCity } from "@/lib/cities";
 import { CityMap } from "./CityMap";
 import { Compare } from "./Compare";
+import { LockButton, LockedBanner } from "./LockIn";
 import { spotId, type MapSpot } from "@/lib/map-types";
 
 export function Collapsible({ title, children }: { title: string; children: React.ReactNode }) {
@@ -403,13 +404,17 @@ export function AnswerCard({ r, onChooseCity }: { r: AgentResult; onChooseCity?:
         )}
       </div>
       {r.source === "qloo" && <DecisionPanel r={r} />}
+      {r.neighborhoods.length > 0 && <LockedBanner city={r.city} />}
       {r.neighborhoods.length > 0 && <div>
         <h2 className="mb-6 font-display text-4xl">
           Neighborhoods that <em>get you.</em>
         </h2>
         <div className="grid gap-7 md:grid-cols-3">
           {r.neighborhoods.map((n, i) => (
-            <NeighborhoodCard key={n.name} n={n} city={r.city} index={i} onClick={typeof n.lat === "number" ? () => selectSpot(spotId("neighborhood", n.name)) : undefined} />
+            <div key={n.name} className="flex min-w-0 flex-col gap-4">
+              <NeighborhoodCard n={n} city={r.city} index={i} onClick={typeof n.lat === "number" ? () => selectSpot(spotId("neighborhood", n.name)) : undefined} />
+              <LockButton r={r} n={n} className="mt-auto" />
+            </div>
           ))}
         </div>
       </div>}

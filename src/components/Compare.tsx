@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import type { AgentResult, NeighborhoodMatch } from "@/lib/agent";
+import { LockButton } from "./LockIn";
 
 const cap = (t: string) => t.charAt(0).toUpperCase() + t.slice(1);
 const RENT_FIT: Record<string, string> = { $: "Easy on a tight budget", $$: "Fits a mid budget", $$$: "Needs a bigger budget" };
@@ -76,6 +77,12 @@ export function Compare({ r }: { r: AgentResult }) {
                 {row.value(n)}
               </div>
             ))}
+          </div>
+        ))}
+        <span />
+        {pair.map((n) => (
+          <div key={n.name + "lock"} className="min-w-0 border-t pt-3">
+            <LockButton r={r} n={n} short className="px-3" />
           </div>
         ))}
       </div>
