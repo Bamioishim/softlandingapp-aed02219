@@ -174,7 +174,7 @@ export async function renderPickCard(pick: LockedPick): Promise<Blob> {
     ctx.fillText("Soft Landing", x, size - 120);
     ctx.fillStyle = "rgba(255,255,255,0.75)";
     ctx.font = `500 24px ${SANS}`;
-    ctx.fillText("softlandingapp.lovable.app", x, size - 80);
+    ctx.fillText("softlanding-mauve.vercel.app", x, size - 80);
     ctx.restore();
     return { canvas, ctx };
   };

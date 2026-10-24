@@ -93,7 +93,7 @@ export async function generateLlmRecommendations(input: z.infer<typeof agentInpu
         model: createOpenAI({
           apiKey: geminiKey,
           baseURL: "https://generativelanguage.googleapis.com/v1beta/openai",
-        }).chat(process.env['GEMINI_MODEL'] || "gemini-2.5-flash"),
+        }).chat(process.env['GEMINI_MODEL'] || "gemini-3.5-flash-lite"),
       })
     : streamText({
         ...common,
@@ -119,7 +119,7 @@ export async function generateLlmRecommendations(input: z.infer<typeof agentInpu
   }
   const aiMs = performance.now() - start;
   const r = buildLlmResult({ city: city.name, tastes: tasteLabels(message, prefs), prefs, output, aiMs });
-  const wikiFetch = (url: string) => fetch(url, { headers: { "User-Agent": "SoftLanding/1.0 (softlandingapp.lovable.app)" }, signal: AbortSignal.timeout(3000) });
+  const wikiFetch = (url: string) => fetch(url, { headers: { "User-Agent": "SoftLanding/1.0 (softlanding-mauve.vercel.app)" }, signal: AbortSignal.timeout(3000) });
   // Neighborhood and spot lookups run in parallel and share one set, so no photo repeats on the page.
   const used = new Set<string>();
   const [neighborhoods, places] = await Promise.all([
