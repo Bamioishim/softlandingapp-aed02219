@@ -79,7 +79,7 @@ describe("LLM-only photos reject wrong Wikipedia matches", () => {
     const [n] = await fillNeighborhoodImages("New York City", [{ name: "Astoria", borough: "Queens" } as { name: string; borough: string; image?: string }], f);
     expect(n!.image).toBe("https://upload.wikimedia.org/Astoria_street.jpg");
     const [bare] = await fillNeighborhoodImages("New York City", [{ name: "Astoria" } as { name: string; image?: string }], wiki({ "Astoria New York City": ["Waldorf Astoria New York", "Astoria"] }, pages));
-    expect(bare!.image).toBe(cityPhoto("New York City", 0));
+    expect(bare!.image).toMatch(/neighborhood-astoria\.jpg$/); // curated photo, never the hotel
   });
 
   it("falls back to city photos when Wikipedia fails, with no repeats", async () => {
