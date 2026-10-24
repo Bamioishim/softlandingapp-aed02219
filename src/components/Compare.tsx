@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { hasRent } from "@/lib/rent";
 import type { AgentResult, NeighborhoodMatch } from "@/lib/agent";
 import { LockButton } from "./LockIn";
 
@@ -28,7 +29,7 @@ export function Compare({ r }: { r: AgentResult }) {
   const pair = [a, b].map((x) => r.neighborhoods.find((n) => n.name === x)).filter(Boolean) as NeighborhoodMatch[];
   const rows: { label: string; value: (n: NeighborhoodMatch) => React.ReactNode }[] = [
     { label: "Match", value: (n) => (n.scoreAvailable === false ? "Not scored" : `${Math.min(99, n.score)}%`) },
-    { label: "Budget fit", value: (n) => <>{budgetFit(n)}<span className="block text-muted-foreground">{n.rentRange}</span></> },
+    { label: "Budget fit", value: (n) => <>{budgetFit(n)}{hasRent(n.rentRange) && <span className="block text-muted-foreground">{n.rentRange}</span>}</> },
     {
       label: "Vibe",
       value: (n) => (

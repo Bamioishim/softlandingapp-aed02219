@@ -163,7 +163,7 @@ export async function queryQloo(input: z.infer<typeof agentInput>, key: string |
       const tags = (p.tags ?? []).map((t) => t.name);
       const score = typeof affinity === "number" ? Math.round(Math.max(0, Math.min(0.99, affinity)) * 100) : 0;
       const current = neighborhoods.get(name);
-      if (!current || score > current.score) neighborhoods.set(name, { name, borough: city, rent: "$$", rentRange: "Not provided by Qloo", tags, matched: [], score, scoreAvailable: typeof affinity === "number", lat: p.location?.lat, lng: p.location?.lon, why: `Qloo recommends ${p.name} here${cells.length ? "; score estimated from the nearest taste heatmap cell" : " based on your taste signals"}.` });
+      if (!current || score > current.score) neighborhoods.set(name, { name, borough: city, rent: "$$", rentRange: "", tags, matched: [], score, scoreAvailable: typeof affinity === "number", lat: p.location?.lat, lng: p.location?.lon, why: `Qloo recommends ${p.name} here${cells.length ? "; score estimated from the nearest taste heatmap cell" : " based on your taste signals"}.` });
       else if (current.lat === undefined && p.location) { current.lat = p.location.lat; current.lng = p.location.lon; }
     }
     const top = [...neighborhoods.values()].sort((a, b) => b.score - a.score).slice(0, 3);

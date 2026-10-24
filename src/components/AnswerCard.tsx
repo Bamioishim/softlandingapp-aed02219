@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { hasRent } from "@/lib/rent";
 import {
   Check,
   ChevronDown,
@@ -158,10 +159,12 @@ export function NeighborhoodCard({
           ? `A local rhythm for your love of ${n.matched.slice(0, 2).join(" and ")}.`
           : FIT_LINES[n.name] ?? n.why}
       </p>
-      <p className="mt-4 border-t pt-3 text-xs">
-        <span className="text-muted-foreground">Rent · 1BR </span>
-        {n.rentRange}
-      </p>
+      {hasRent(n.rentRange) && (
+        <p className="mt-4 border-t pt-3 text-xs">
+          <span className="text-muted-foreground">Rent · 1BR </span>
+          {n.rentRange}
+        </p>
+      )}
     </article>
   );
 }

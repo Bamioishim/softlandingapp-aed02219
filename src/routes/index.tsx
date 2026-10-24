@@ -73,7 +73,8 @@ function Index() {
   const [input, setInput] = useState("");
   const [busy, setBusy] = useState(false);
   const [mode, setMode] = useState<Mode>("qloo");
-  const [voiceOn, setVoiceOn] = useState(true);
+  const [voiceOn, setVoiceOn] = useState(false);
+  const voiceInputRef = useRef(false);
   const [about, setAbout] = useState(false);
   const [menu, setMenu] = useState(false);
   const [budget, setBudget] = useState("");
@@ -97,6 +98,8 @@ function Index() {
   // Core search: runs the current taste text against a given city and mode.
   const search = async (t: string, c: CityResolution, m: Mode) => {
     const request = ++requestRef.current;
+    const viaVoice = voiceInputRef.current;
+    voiceInputRef.current = false;
     setInput("");
     setBusy(true);
     const aid = ++idRef.current;
@@ -126,7 +129,7 @@ function Index() {
     if (request !== requestRef.current) return;
     setMsgs((prev) => prev.map((x) => (x.id === aid ? { ...x, result } : x)));
     setBusy(false);
-    if (voiceEnabledRef.current) tts.speak(result.spoken);
+    if (voiceEnabledRef.current || viaVoice) tts.speak(result.spoken);
     inputRef.current?.focus({ preventScroll: true });
     } catch {
       if (request !== requestRef.current) return;
@@ -155,7 +158,10 @@ function Index() {
     tts.cancel();
     if (t) void search(t, c, m);
   };
-  const stt = useSpeechRecognition(send);
+  const stt = useSpeechRecognition((t: string) => {
+    voiceInputRef.current = true;
+    send(t);
+  });
   const handleCity = (r: CityResolution) => {
     if (started && r.city.name !== city?.city.name) rerun(r, mode);
     else {
