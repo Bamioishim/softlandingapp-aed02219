@@ -1,4 +1,6 @@
-import { Check, Lock } from "lucide-react";
+import { useState } from "react";
+import { Check, Download, Lock, Share2 } from "lucide-react";
+import { downloadBlob, pickFileName, renderPickCard, sharePickCard } from "@/lib/pick-card";
 import type { AgentResult, NeighborhoodMatch } from "@/lib/agent";
 import { useLockedPick, type LockedPick } from "@/lib/locked-pick";
 import { Button } from "./Button";
@@ -34,7 +36,25 @@ export function LockButton({ r, n, className = "", short = false }: { r: AgentRe
 
 export function LockedBanner({ city }: { city: string }) {
   const [pick, lock] = useLockedPick();
+  const [status, setStatus] = useState<string>("");
   if (!pick || pick.city !== city) return null;
+  const share = async () => {
+    setStatus("Making your card…");
+    try {
+      const r = await sharePickCard(pick);
+      setStatus(r === "shared" ? "Shared!" : r === "downloaded" ? "Card downloaded" : "");
+    } catch {
+      setStatus("Could not make the card. Please try again.");
+    }
+  };
+  const download = async () => {
+    try {
+      downloadBlob(await renderPickCard(pick), pickFileName(pick));
+      setStatus("Card downloaded");
+    } catch {
+      setStatus("Could not make the card. Please try again.");
+    }
+  };
   return (
     <section className="animate-rise rounded-2xl bg-card p-5 sm:p-6" aria-label="Your locked pick" data-testid="locked-banner">
       <p className="eyebrow flex items-center gap-2 text-muted-foreground">
@@ -49,11 +69,18 @@ export function LockedBanner({ city }: { city: string }) {
           </p>
         </div>
         <div className="flex flex-wrap gap-2" data-slot="pick-actions">
+          <Button variant="pill" className="bg-primary py-2.5 text-xs text-primary-foreground" onClick={share}>
+            <Share2 className="h-3.5 w-3.5" /> Share my pick
+          </Button>
+          <Button variant="pill" className="border py-2.5 text-xs" onClick={download} aria-label="Download pick card">
+            <Download className="h-3.5 w-3.5" /> Save image
+          </Button>
           <Button variant="pill" className="border py-2.5 text-xs" onClick={() => lock(null)}>
             Change pick
           </Button>
         </div>
       </div>
+      {status && <p role="status" className="mt-3 text-xs text-muted-foreground">{status}</p>}
     </section>
   );
 }
