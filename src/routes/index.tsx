@@ -576,10 +576,13 @@ function Index() {
         ) : (
           <section className="chat-shell">
             <div className="sticky top-0 z-30 mb-10 flex flex-wrap items-center justify-between gap-3 border-b bg-background py-3">
-              <Button onClick={changeCity} className="px-4 py-3 text-xs">
-                <Globe2 className="h-4 w-4" />
-                Change city
-              </Button>
+              <div className="flex items-center gap-3">
+                <img src="/logo.svg" alt="Soft Landing" width={26} height={26} className="h-[26px] w-[26px]" />
+                <Button onClick={changeCity} className="px-4 py-3 text-xs">
+                  <Globe2 className="h-4 w-4" />
+                  Change city
+                </Button>
+              </div>
               <div className="flex items-center gap-2">
                 {modeControl}
                 <Button

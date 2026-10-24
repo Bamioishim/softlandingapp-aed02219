@@ -1,3 +1,5 @@
+<p align="center"><img src="public/logo.svg" alt="Soft Landing logo" width="96" height="96"></p>
+
 # Soft Landing
 
 **Move anywhere, feel at home.** Soft Landing is a voice-first AI relocation and trip agent for any city in the world. Pick a destination, say (or type) what you love (music, food, art, nightlife, vibe) and Soft Landing matches you with neighborhoods and places that fit, explains why each one was picked, and builds a personal plan.
