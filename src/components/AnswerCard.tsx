@@ -18,6 +18,7 @@ import { CityMap } from "./CityMap";
 import { Compare } from "./Compare";
 import { LockButton, LockedBanner } from "./LockIn";
 import { buildStory } from "@/lib/story";
+import { joinParts } from "@/lib/parts";
 import { spotId, type MapSpot } from "@/lib/map-types";
 
 export function Collapsible({ title, children }: { title: string; children: React.ReactNode }) {
@@ -143,7 +144,7 @@ export function NeighborhoodCard({
         <ArrowUpRight className="mt-2 h-4 w-4 shrink-0" />
       </div>
       <p className="eyebrow mt-2 text-muted-foreground">
-        {city} · {n.borough}
+        {joinParts(city, n.borough)}
       </p>
       <div className="mt-4 flex flex-wrap gap-1.5">
         {tags.map((t) => (
@@ -326,7 +327,7 @@ export function AnswerCard({ r, onChooseCity }: { r: AgentResult; onChooseCity?:
   const spots: MapSpot[] = [
     ...r.neighborhoods
       .filter((n) => typeof n.lat === "number" && typeof n.lng === "number")
-      .map((n) => ({ id: spotId("neighborhood", n.name), name: n.name, area: `${r.city} · ${n.borough}`, kind: "neighborhood" as const, lat: n.lat!, lng: n.lng!, image: n.image && n.image.length ? n.image : undefined, imageAlt: n.imageAlt })),
+      .map((n) => ({ id: spotId("neighborhood", n.name), name: n.name, area: joinParts(r.city, n.borough), kind: "neighborhood" as const, lat: n.lat!, lng: n.lng!, image: n.image && n.image.length ? n.image : undefined, imageAlt: n.imageAlt })),
     ...r.places
       .filter((p) => typeof p.lat === "number" && typeof p.lng === "number")
       .map((p) => ({ id: spotId("place", p.name), name: p.name, area: p.neighborhood, kind: "place" as const, lat: p.lat!, lng: p.lng! })),

@@ -1,6 +1,7 @@
 import type { LockedPick } from "./locked-pick";
 
 import { CHARACTER_URL } from "./character";
+import { areaLabel } from "./parts";
 
 const INK = "#151513";
 const GREEN = "#53634c";
@@ -101,7 +102,7 @@ export async function renderPickCard(pick: LockedPick): Promise<Blob> {
     const w = size - 180;
     ctx.fillStyle = "rgba(255,255,255,0.8)";
     ctx.font = `600 26px ${SANS}`;
-    ctx.fillText("MY SOFT LANDING", x, 140);
+    ctx.fillText(`${pick.neighborhood} it is`.toUpperCase(), x, 140);
 
     // Place name: neighborhood + city in big serif type.
     const nameSize = fitText(ctx, pick.neighborhood, w, 140, SERIF);
@@ -113,10 +114,13 @@ export async function renderPickCard(pick: LockedPick): Promise<Blob> {
     ctx.font = `italic 72px ${SERIF}`;
     ctx.fillStyle = "rgba(255,255,255,0.92)";
     ctx.fillText(pick.city, x, y);
-    y += 50;
-    ctx.fillStyle = "rgba(255,255,255,0.72)";
-    ctx.font = `500 26px ${SANS}`;
-    ctx.fillText(pick.borough.toUpperCase(), x, y);
+    const area = areaLabel(pick.borough, pick.city, pick.neighborhood);
+    if (area) {
+      y += 50;
+      ctx.fillStyle = "rgba(255,255,255,0.72)";
+      ctx.font = `500 26px ${SANS}`;
+      ctx.fillText(area.toUpperCase(), x, y);
+    }
 
     if (pick.score !== null) {
       y += 90;

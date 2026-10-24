@@ -1,3 +1,4 @@
+import { joinParts } from "@/lib/parts";
 import { ClientOnly } from "@tanstack/react-router";
 import { Suspense, lazy } from "react";
 import { Navigation } from "lucide-react";
@@ -32,7 +33,7 @@ export function CityMap({
           <div className="min-w-0 flex-1">
             <h3 className="font-display text-2xl leading-tight">{selected.name}</h3>
             <p className="mt-1 text-[11px] text-muted-foreground">
-              {selected.area} · {selected.kind === "neighborhood" ? "Neighborhood" : "Spot"}
+              {joinParts(selected.area, selected.kind === "neighborhood" ? "Neighborhood" : "Spot")}
             </p>
             <a
               className="map-directions"

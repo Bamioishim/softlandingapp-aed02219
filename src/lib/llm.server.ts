@@ -7,6 +7,7 @@ import { resolveCity } from "./cities";
 import { agentInput, type Prefs } from "./qloo";
 import { buildLlmResult, type LlmOutput } from "./llm-map";
 import type { AgentResult } from "./agent-types";
+import { fillNeighborhoodImages } from "./neighborhood-images";
 
 const outputSchema = z
   .object({
@@ -104,5 +105,8 @@ export async function generateLlmRecommendations(input: z.infer<typeof agentInpu
     throw error;
   }
   const aiMs = performance.now() - start;
-  return buildLlmResult({ city: city.name, tastes: tasteLabels(message, prefs), prefs, output, aiMs });
+  const r = buildLlmResult({ city: city.name, tastes: tasteLabels(message, prefs), prefs, output, aiMs });
+  const wikiFetch = (url: string) => fetch(url, { headers: { "User-Agent": "SoftLanding/1.0 (softlandingapp.lovable.app)" }, signal: AbortSignal.timeout(5000) });
+  r.neighborhoods = await fillNeighborhoodImages(r.city, r.neighborhoods, wikiFetch);
+  return r;
 }

@@ -58,9 +58,17 @@ describe("LLM-only mode", () => {
     expect(screen.getByTestId("decision-story").textContent).toBe(story);
   });
 
-  it("labels every lock-in button with the city name", () => {
+  it("labels each lock-in button with its neighborhood name", () => {
     const r = buildLlmResult({ city: "Paris", tastes: ["coffee"], prefs: {}, output, aiMs: 900 });
     render(<AnswerCard r={r} />);
-    expect(screen.getAllByText("Paris it is").length).toBeGreaterThanOrEqual(3);
+    for (const name of ["Le Marais", "Canal Saint-Martin", "Belleville"]) expect(screen.getAllByText(`${name} it is`).length).toBeGreaterThanOrEqual(1);
+    expect(screen.queryByText("Paris it is")).toBeNull();
+  });
+
+  it("never repeats the city in a neighborhood subtitle", () => {
+    const base = buildLlmResult({ city: "New York City", tastes: [], prefs: {}, output, aiMs: 900 });
+    const r = { ...base, neighborhoods: base.neighborhoods.map((n) => ({ ...n, borough: "new york city" })) };
+    const { container } = render(<AnswerCard r={r} />);
+    expect(container.textContent).not.toMatch(/New York City · new york city/i);
   });
 });

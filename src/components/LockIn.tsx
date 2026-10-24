@@ -7,6 +7,7 @@ import { useLockedPick, type LockedPick } from "@/lib/locked-pick";
 import { cityPhoto } from "@/lib/photos";
 import { CHARACTER_URL } from "@/lib/character";
 import { Button } from "./Button";
+import { areaLabel, joinParts } from "@/lib/parts";
 
 export function toPick(r: AgentResult, n: NeighborhoodMatch): LockedPick {
   return {
@@ -21,7 +22,7 @@ export function toPick(r: AgentResult, n: NeighborhoodMatch): LockedPick {
   };
 }
 
-export const lockLabel = (city: string) => `${city} it is`;
+export const lockLabel = (neighborhood: string) => `${neighborhood} it is`;
 
 function useCardActions(pick: LockedPick | null) {
   const [status, setStatus] = useState("");
@@ -56,7 +57,7 @@ export function LockButton({ r, n, className = "" }: { r: AgentResult; n: Neighb
       <Button
         variant="pill"
         aria-pressed={locked}
-        aria-label={locked ? `${n.name} is my pick (view card)` : `${lockLabel(r.city)}: pick ${n.name}`}
+        aria-label={locked ? `${n.name} is my pick (view card)` : `${lockLabel(n.name)}: pick it in ${r.city}`}
         onClick={() => {
           if (!locked) lock(toPick(r, n));
           setOpen(true);
@@ -64,7 +65,7 @@ export function LockButton({ r, n, className = "" }: { r: AgentResult; n: Neighb
         className={`w-full justify-center py-2.5 text-xs ${locked ? "bg-primary text-primary-foreground" : "border"} ${className}`}
       >
         {locked && <Check className="h-3.5 w-3.5" />}
-        {locked ? `My pick: ${n.name}` : lockLabel(r.city)}
+        {locked ? `My pick: ${n.name}` : lockLabel(n.name)}
       </Button>
       {open && locked && pick && <PickSheet pick={pick} onClose={() => setOpen(false)} onChange={() => { lock(null); setOpen(false); }} />}
     </>
@@ -100,10 +101,10 @@ export function PickSheet({ pick, onClose, onChange }: { pick: LockedPick; onClo
         {/* Character illustration (src/lib/character.ts), bottom-right, ~45% of card height. */}
         {CHARACTER_URL && <img src={CHARACTER_URL} alt="" data-slot="character" className="pick-sheet-character" />}
         <div className="relative z-[2] p-6 pt-8 text-white sm:p-8">
-          <p className="eyebrow text-white/80">My soft landing</p>
+          <p className="eyebrow text-white/80">{lockLabel(pick.neighborhood)}</p>
           <h2 className="mt-3 font-display text-5xl leading-[0.95] sm:text-6xl">{pick.neighborhood}</h2>
           <p className="mt-1 font-display text-3xl italic text-white/90">{pick.city}</p>
-          <p className="eyebrow mt-2 text-white/70">{pick.borough}</p>
+          {areaLabel(pick.borough, pick.city, pick.neighborhood) && <p className="eyebrow mt-2 text-white/70">{areaLabel(pick.borough, pick.city, pick.neighborhood)}</p>}
           {pick.score !== null && (
             <p className="mt-4 inline-flex items-center gap-2 rounded-full bg-white/15 px-4 py-1.5 text-sm backdrop-blur">
               <span className="match-dot" /> <strong>{pick.score}%</strong> match
@@ -145,14 +146,13 @@ export function LockedBanner({ city }: { city: string }) {
   return (
     <section className="animate-rise rounded-2xl bg-card p-5 sm:p-6" aria-label="Your locked pick" data-testid="locked-banner">
       <p className="eyebrow flex items-center gap-2 text-muted-foreground">
-        <span className="match-dot" /> {lockLabel(pick.city)}
+        <span className="match-dot" /> {lockLabel(pick.neighborhood)}
       </p>
       <div className="mt-3 flex flex-wrap items-end justify-between gap-4">
         <div>
           <h2 className="font-display text-4xl leading-tight">{pick.neighborhood}</h2>
           <p className="eyebrow mt-1 text-muted-foreground">
-            {pick.city} · {pick.borough}
-            {pick.score !== null ? ` · ${pick.score}% match` : ""}
+            {joinParts(pick.city, pick.borough, pick.score !== null ? `${pick.score}% match` : "")}
           </p>
         </div>
         <div className="flex flex-wrap gap-2" data-slot="pick-actions">
