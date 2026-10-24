@@ -55,6 +55,13 @@ const EXAMPLES = [
 type Msg =
   | { id: number; role: "user"; text: string }
   | { id: number; role: "assistant"; result?: AgentResult; error?: string; steps: AgentStep[] };
+const SEARCH_TIMEOUT_MS = 60000;
+function withTimeout<T>(p: Promise<T>, ms: number): Promise<T> {
+  return new Promise<T>((resolve, reject) => {
+    const id = setTimeout(() => reject(new Error("Search timed out")), ms);
+    p.then((v) => { clearTimeout(id); resolve(v); }, (e) => { clearTimeout(id); reject(e); });
+  });
+}
 function tasteMessage(msgs: Msg[]) { return [...msgs].reverse().find((m) => m.role === "user")?.text ?? ""; }
 function Index() {
   const getQloo = useServerFn(getQlooRecommendations);
@@ -95,10 +102,10 @@ function Index() {
       { id: aid, role: "assistant", steps: [] },
     ]);
     try {
-    const result = m === "qloo" ? await getQloo({ data: { message: t, city: c.city.name, prefs: {
+    const result = await withTimeout(m === "qloo" ? getQloo({ data: { message: t, city: c.city.name, prefs: {
       budget: (budget || undefined) as Prefs["budget"], pace: (pace || undefined) as Prefs["pace"], trip,
       lifeStage: (lifeStage || undefined) as Prefs["lifeStage"], chips: chips as Prefs["chips"], climate: (climate || undefined) as Prefs["climate"], needs,
-    } } }) : await runAgent(
+    } } }) : runAgent(
       t,
       m,
       (s) => {
@@ -111,7 +118,7 @@ function Index() {
       },
       c.city.name,
       { budget: (budget || undefined) as Prefs["budget"], pace: (pace || undefined) as Prefs["pace"], trip, lifeStage: (lifeStage || undefined) as Prefs["lifeStage"], chips: chips as Prefs["chips"], needs },
-    );
+    ), SEARCH_TIMEOUT_MS);
     if (request !== requestRef.current) return;
     setMsgs((prev) => prev.map((x) => (x.id === aid ? { ...x, result } : x)));
     setBusy(false);
@@ -119,7 +126,7 @@ function Index() {
     inputRef.current?.focus({ preventScroll: true });
     } catch {
       if (request !== requestRef.current) return;
-      setMsgs((prev) => prev.map((x) => x.id === aid ? { ...x, error: "Could not load recommendations. Please try again." } : x));
+      setMsgs((prev) => prev.map((x) => x.id === aid ? { ...x, error: "That took too long or failed. Please try again." } : x));
       setBusy(false);
     }
   };
@@ -606,8 +613,12 @@ function Index() {
                       }} />
                     ) : m.error ? <p role="alert">{m.error}</p> : (
                       <div className="rounded-2xl border p-6">
-                        <p className="eyebrow mb-5 text-muted-foreground">
+                        <p className="eyebrow mb-4 text-muted-foreground">
                           Finding your soft landing
+                        </p>
+                        <p role="status" aria-live="polite" className="mb-5 flex items-center gap-3 text-sm" data-testid="search-pending">
+                          <span className="h-4 w-4 shrink-0 animate-spin rounded-full border border-foreground border-t-transparent" />
+                          Matching your tastes with Qloo. This can take up to 20 seconds…
                         </p>
                         <Collapsible title="Agent steps"><StepList steps={m.steps} pending /></Collapsible>
                       </div>
