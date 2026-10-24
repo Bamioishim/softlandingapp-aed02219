@@ -15,6 +15,7 @@ import { Button } from "./Button";
 import { supabase } from "@/integrations/supabase/client";
 import { resolveCity } from "@/lib/cities";
 import { CityMap } from "./CityMap";
+import { Compare } from "./Compare";
 import { spotId, type MapSpot } from "@/lib/map-types";
 
 export function Collapsible({ title, children }: { title: string; children: React.ReactNode }) {
@@ -387,12 +388,17 @@ export function AnswerCard({ r, onChooseCity }: { r: AgentResult; onChooseCity?:
     <div className="animate-rise space-y-10">
       <div>
         <p className="eyebrow text-muted-foreground">
-          {r.source === "sample" ? "Sample recommendations" : r.mode === "qloo" ? "Qloo-grounded answer" : "Without Qloo"}
+          {r.source === "sample" ? "Sample recommendations" : r.source === "llm" ? "AI-curated, without Qloo" : r.mode === "qloo" ? "Qloo-grounded answer" : "Without Qloo"}
         </p>
         <p className="mt-4 max-w-3xl text-base leading-relaxed">{r.summary}</p>
         {r.source === "sample" && (
           <p role="note" className="mt-4 inline-block rounded-xl border px-4 py-2 text-xs">
             Sample data, not from Qloo
+          </p>
+        )}
+        {r.source === "llm" && (
+          <p role="note" className="mt-4 inline-block rounded-xl border px-4 py-2 text-xs">
+            AI suggestions, not Qloo-verified
           </p>
         )}
       </div>
@@ -407,6 +413,7 @@ export function AnswerCard({ r, onChooseCity }: { r: AgentResult; onChooseCity?:
           ))}
         </div>
       </div>}
+      {r.neighborhoods.length > 1 && <Compare r={r} />}
       {r.places.length > 0 && <div>
         <h2 className="mb-6 font-display text-4xl">
           Your new <em>regular spots.</em>
