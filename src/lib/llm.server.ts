@@ -54,7 +54,7 @@ function userPrompt(city: { name: string; country: string }, message: string, pr
   return [
     `Destination: ${city.name}, ${city.country}`,
     `What the user loves: ${message}`,
-    `Preferences: budget=${prefs.budget ?? "unspecified"}, pace=${prefs.pace ?? "unspecified"}, life stage=${prefs.lifeStage ?? "unspecified"}, trip=${prefs.trip ?? "moving"}, extra tastes=${chips}.`,
+    `Preferences: budget=${prefs.budget ?? "unspecified"}, pace=${prefs.pace ?? "unspecified"}, life stage=${prefs.lifeStage ?? "unspecified"}, trip=${prefs.trip ?? "moving"}, extra tastes=${chips}, needs=${(prefs.needs ?? []).join(", ") || "none"}. Favor neighborhoods and places that suit these needs.`,
   ].join("\n");
 }
 

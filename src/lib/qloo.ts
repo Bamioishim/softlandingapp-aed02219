@@ -6,6 +6,21 @@ import { z } from "zod";
 import { placeImages } from "./qloo-images";
 
 export const TASTE_CHIPS = ["Food", "Music", "Art", "Nightlife", "Outdoors", "Fashion", "Books", "Film"] as const;
+export const NEEDS = ["halal", "vegan", "nut-free", "gluten-free", "accessible"] as const;
+export const NEED_LABELS: Record<(typeof NEEDS)[number], string> = {
+  halal: "Halal",
+  vegan: "Vegan",
+  "nut-free": "Nut-free",
+  "gluten-free": "Gluten-free",
+  accessible: "Step-free access",
+};
+const NEED_ITEMS: Record<(typeof NEEDS)[number], string> = {
+  halal: "Find a halal butcher and a halal-friendly restaurant near your top neighborhood",
+  vegan: "Find a vegan-friendly grocer and café near your top neighborhood",
+  "nut-free": "Save the local emergency number and ask cafés about nut-free options",
+  "gluten-free": "Find a bakery or grocer with gluten-free options nearby",
+  accessible: "Check step-free stations and accessible routes near your top neighborhood",
+};
 export const prefsSchema = z.object({
   budget: z.enum(["low", "mid", "high"]).optional(),
   pace: z.enum(["quiet", "balanced", "energetic"]).optional(),
@@ -13,6 +28,7 @@ export const prefsSchema = z.object({
   lifeStage: z.enum(["student", "young-professional", "family", "retiree"]).optional(),
   chips: z.array(z.enum(TASTE_CHIPS)).max(8).optional(),
   climate: z.enum(["warm", "mild", "cool"]).optional(),
+  needs: z.array(z.enum(NEEDS)).max(5).optional(),
 });
 export type Prefs = z.infer<typeof prefsSchema>;
 export const agentInput = z.object({ city: z.string().trim().min(1).max(120), message: z.string().trim().max(2000), prefs: prefsSchema.optional() })
@@ -46,16 +62,20 @@ const STAGE_ITEMS: Record<NonNullable<Prefs["lifeStage"]>, string> = {
   retiree: "Register with a local clinic and find a community club",
 };
 export function buildPlan(city: string, prefs: Prefs, places: Place[], top: NeighborhoodMatch[]): AgentResult["plan"] {
+  const needItems = (prefs.needs ?? []).map((n) => NEED_ITEMS[n]);
   if (prefs.trip === "visiting") {
     const spot = (i: number) => places[i]?.name ?? "a local favorite";
-    return [
+    const days = [
       { week: "Day 1", items: [`Arrive and settle in around ${top[0]?.name ?? city}`, `Visit ${spot(0)}`, `Dinner near ${spot(1)}`] },
       { week: "Day 2", items: [`Explore ${top[1]?.name ?? city}`, `Stop by ${spot(2)}`, `Evening at ${spot(3)}`] },
       { week: "Day 3", items: [`Morning in ${top[2]?.name ?? city}`, `See ${spot(4)}`, `Last stop: ${spot(5)}`] },
     ];
+    if (needItems.length && days[0]) days[0] = { ...days[0], items: [...days[0].items, ...needItems] };
+    return days;
   }
   const w1 = [`Sort your residence ID or permit in ${city}`, "Open a local bank account", "Get a local SIM card", `Pick up a ${city} transport card`];
   if (prefs.lifeStage) w1.push(STAGE_ITEMS[prefs.lifeStage]);
+  w1.push(...needItems);
   return [
     { week: "Week 1", items: w1 },
     { week: "Week 2", items: ["Compare local apartment listings", `Try ${places[1]?.name ?? "a new local spot"}`, "Join a local community group"] },

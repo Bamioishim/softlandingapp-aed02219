@@ -15,7 +15,7 @@ import {
   ArrowRight,
   Globe2,
 } from "lucide-react";
-import { TASTE_CHIPS, type Prefs } from "@/lib/qloo";
+import { NEEDS, NEED_LABELS, TASTE_CHIPS, type Prefs } from "@/lib/qloo";
 import { runAgent, type AgentResult, type AgentStep, type Mode } from "@/lib/agent";
 import { flagForCountry, resolveCity, type CityResolution } from "@/lib/cities";
 import { CITY_DATA } from "@/lib/city-data";
@@ -70,6 +70,7 @@ function Index() {
   const [trip, setTrip] = useState<"moving" | "visiting">("moving");
   const [lifeStage, setLifeStage] = useState("");
   const [chips, setChips] = useState<string[]>([]);
+  const [needs, setNeeds] = useState<Prefs["needs"]>([]);
   const [climate, setClimate] = useState("");
   const [city, setCity] = useState<CityResolution | null>(null);
   const [snapNotice, setSnapNotice] = useState<string | null>(null);
@@ -96,7 +97,7 @@ function Index() {
     try {
     const result = m === "qloo" ? await getQloo({ data: { message: t, city: c.city.name, prefs: {
       budget: (budget || undefined) as Prefs["budget"], pace: (pace || undefined) as Prefs["pace"], trip,
-      lifeStage: (lifeStage || undefined) as Prefs["lifeStage"], chips: chips as Prefs["chips"], climate: (climate || undefined) as Prefs["climate"],
+      lifeStage: (lifeStage || undefined) as Prefs["lifeStage"], chips: chips as Prefs["chips"], climate: (climate || undefined) as Prefs["climate"], needs,
     } } }) : await runAgent(
       t,
       m,
@@ -109,7 +110,7 @@ function Index() {
           );
       },
       c.city.name,
-      { budget: (budget || undefined) as Prefs["budget"], pace: (pace || undefined) as Prefs["pace"], trip, lifeStage: (lifeStage || undefined) as Prefs["lifeStage"], chips: chips as Prefs["chips"] },
+      { budget: (budget || undefined) as Prefs["budget"], pace: (pace || undefined) as Prefs["pace"], trip, lifeStage: (lifeStage || undefined) as Prefs["lifeStage"], chips: chips as Prefs["chips"], needs },
     );
     if (request !== requestRef.current) return;
     setMsgs((prev) => prev.map((x) => (x.id === aid ? { ...x, result } : x)));
@@ -484,6 +485,14 @@ function Index() {
                       <button key={c} type="button" aria-pressed={chips.includes(c)} className="preference-chip"
                         onClick={() => setChips((cur) => (cur.includes(c) ? cur.filter((x) => x !== c) : [...cur, c]))}>
                         {c}
+                      </button>
+                    ))}
+                  </div>
+                  <div className="preference-chips" role="group" aria-label="Your needs (optional)">
+                    {NEEDS.map((n) => (
+                      <button key={n} type="button" aria-pressed={needs?.includes(n) ?? false} className="preference-chip"
+                        onClick={() => setNeeds((cur = []) => (cur.includes(n) ? cur.filter((x) => x !== n) : [...cur, n]))}>
+                        {NEED_LABELS[n]}
                       </button>
                     ))}
                   </div>
