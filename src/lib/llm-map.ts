@@ -51,7 +51,7 @@ export function buildLlmResult(opts: {
       score: 0,
       scoreAvailable: false,
       matched,
-      rentRange: `${n.rentBand} (AI estimate)`,
+      rentRange: "", // no real rent figure in LLM-only mode: the rent row stays hidden
     };
   });
   const places: Place[] = output.places.slice(0, 8).map((p, i) => ({

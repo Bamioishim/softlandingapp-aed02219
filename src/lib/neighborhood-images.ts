@@ -1,7 +1,7 @@
 // Real photos for LLM-only cards. Wikipedia is used only when the article title strictly matches the
 // place and the article is about this city; otherwise neighborhoods get a city photo and spots a
 // category photo. A wrong photo is worse than a generic one. Never repeats a photo across cards.
-import { cityPhoto, CITY_PHOTOS } from "./photos";
+import { cityPhoto, CITY_PHOTOS, curatedNeighborhoodPhoto, GENERIC_PHOTOS } from "./photos";
 import { CATEGORY_POOLS, photoCategory } from "./category-photos";
 
 type Fetcher = (url: string) => Promise<{ ok: boolean; json: () => Promise<unknown> }>;
@@ -73,6 +73,23 @@ async function retry(fetcher: Fetcher, url: string) {
   return fetcher(url);
 }
 
+/** First JPEG photo used in an article (skipping maps, flags, logos), as a ~1000px thumbnail. */
+async function articlePhoto(title: string, fetcher: Fetcher): Promise<string | undefined> {
+  try {
+    const r = await retry(fetcher, `${API}&titles=${encodeURIComponent(title)}&generator=images&gimlimit=30&prop=imageinfo&iiprop=url|mime&iiurlwidth=1000`);
+    if (!r.ok) return undefined;
+    const d = (await r.json()) as { query?: { pages?: Record<string, { title?: string; imageinfo?: { thumburl?: string; mime?: string }[] }> } };
+    const pages = Object.values(d.query?.pages ?? {}).sort((a, b) => (a.title ?? "").localeCompare(b.title ?? ""));
+    for (const pg of pages) {
+      const info = pg.imageinfo?.[0];
+      if (info?.mime === "image/jpeg" && info.thumburl && !badImage(pg.title ?? "") && !badImage(info.thumburl)) return info.thumburl;
+    }
+  } catch {
+    /* fall back */
+  }
+  return undefined;
+}
+
 const API = "https://en.wikipedia.org/w/api.php?action=query&format=json&origin=*&redirects=1";
 
 /**
@@ -94,8 +111,10 @@ export async function strictWikiImage(name: string, city: string, kind: "spot" |
       if (!p || "missing" in p || (p.pageprops && "disambiguation" in p.pageprops)) continue;
       if (!isAboutCity(p, city)) continue;
       const src = p.thumbnail?.source;
-      // The right article but no usable photo: stop rather than try weaker matches.
-      return src && !badImage(src) ? { src, title: p.title ?? cand } : undefined;
+      if (src && !badImage(src)) return { src, title: p.title ?? cand };
+      // The right article but its lead image is a map or locator: use the first real photo in the article.
+      const alt = await articlePhoto(p.title ?? cand, fetcher);
+      return alt ? { src: alt, title: p.title ?? cand } : undefined;
     }
   } catch {
     /* offline or timeout: caller falls back */
@@ -128,6 +147,11 @@ export async function fillNeighborhoodImages<T extends { name: string; image?: s
       used.add(wiki);
       return { ...n, image: wiki, imageAlt: `${n.name}, ${city}` };
     }
+    const curated = curatedNeighborhoodPhoto(city, n.name);
+    if (curated && !used.has(curated.src)) {
+      used.add(curated.src);
+      return { ...n, image: curated.src, imageAlt: curated.alt };
+    }
     for (let tries = 0; tries < cityCount; tries++) {
       const src = cityPhoto(city, cityIdx++);
       if (!used.has(src)) {
@@ -135,7 +159,10 @@ export async function fillNeighborhoodImages<T extends { name: string; image?: s
         return { ...n, image: src, imageAlt: `${city} city view` };
       }
     }
-    return n; // no unused photo left: keep the plain name card rather than repeat one
+    // City photos used up: a generic street photo beats a blank card.
+    const generic = GENERIC_PHOTOS.find((g) => !used.has(g)) ?? cityPhoto(city, i);
+    used.add(generic);
+    return { ...n, image: generic, imageAlt: `${city} street view` };
   });
 }
 

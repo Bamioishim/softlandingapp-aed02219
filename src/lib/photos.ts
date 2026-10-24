@@ -82,6 +82,13 @@ const NEIGHBORHOOD_PHOTOS: Record<string, NeighborhoodPhoto> = {
   "Berlin:Neuk\u00f6lln": { src: neighborhood12.url, alt: "Neuk\u00f6lln, Berlin", source: "https://unsplash.com/photos/painted-house-interior-I2UEWKTgCng", photographer: "brandon siu" }
 };
 
+/** Hand-picked photo for a known neighborhood, if any. */
+export function curatedNeighborhoodPhoto(city: string, neighborhood: string): NeighborhoodPhoto | undefined {
+  return NEIGHBORHOOD_PHOTOS[`${city}:${neighborhood}`];
+}
+/** Generic street/cafe photos used only when nothing place-specific is left. */
+export const GENERIC_PHOTOS = [fallbackStreet.url, fallback.url, cafe.url, food.url];
+
 export function neighborhoodPhoto(city: string, neighborhood: string, index = 0): NeighborhoodPhoto {
   return NEIGHBORHOOD_PHOTOS[`${city}:${neighborhood}`] ?? {
     src: cityPhoto(city, index),

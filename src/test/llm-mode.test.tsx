@@ -31,7 +31,7 @@ describe("LLM-only mode", () => {
     expect(r.trip).toBe("visiting");
     expect(r.plan.map((p) => p.week)).toEqual(["Day 1", "Day 2", "Day 3"]);
     expect(r.neighborhoods.every((n) => n.scoreAvailable === false)).toBe(true);
-    expect(r.neighborhoods[0]?.rentRange).toContain("AI estimate");
+    expect(r.neighborhoods[0]?.rentRange).toBe("");
     expect(r.neighborhoods[0]?.matched).toHaveLength(3);
     expect(r.places[0]?.image).toBeTruthy();
     expect(r.steps.some((s) => s.label.includes("Lovable AI"))).toBe(true);

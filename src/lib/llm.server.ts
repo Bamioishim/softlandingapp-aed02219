@@ -119,7 +119,7 @@ export async function generateLlmRecommendations(input: z.infer<typeof agentInpu
   }
   const aiMs = performance.now() - start;
   const r = buildLlmResult({ city: city.name, tastes: tasteLabels(message, prefs), prefs, output, aiMs });
-  const wikiFetch = (url: string) => fetch(url, { headers: { "User-Agent": "SoftLanding/1.0 (softlanding-mauve.vercel.app)" }, signal: AbortSignal.timeout(3000) });
+  const wikiFetch = (url: string) => fetch(url, { headers: { "User-Agent": "SoftLanding/1.0 (softlanding-mauve.vercel.app)" }, signal: AbortSignal.timeout(6000) });
   // Neighborhood and spot lookups run in parallel and share one set, so no photo repeats on the page.
   const used = new Set<string>();
   const [neighborhoods, places] = await Promise.all([
