@@ -88,6 +88,7 @@ function Index() {
   const [snapNotice, setSnapNotice] = useState<string | null>(null);
   const tts = useSpeechSynthesis();
   const endRef = useRef<HTMLDivElement>(null);
+  const landedRef = useRef<number | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const idRef = useRef(0);
   const requestRef = useRef(0);
@@ -203,7 +204,20 @@ function Index() {
     document.getElementById("tastes-input")?.focus({ preventScroll: true });
   };
   useEffect(() => {
-    if (started) endRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
+    if (!started) return;
+    const last = msgs[msgs.length - 1];
+    if (last && last.role === "assistant" && last.result) {
+      // Land on the newest "Neighborhoods that get you" heading once, not the 30-day plan below it.
+      if (landedRef.current === last.id) return;
+      landedRef.current = last.id;
+      const heads = document.querySelectorAll(".neighborhoods-heading");
+      const h = heads[heads.length - 1];
+      if (h) {
+        requestAnimationFrame(() => h.scrollIntoView({ behavior: "smooth", block: "start" }));
+        return;
+      }
+    }
+    endRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
   }, [msgs, started]);
   useEffect(() => {
     if (!about) return;
@@ -410,6 +424,7 @@ function Index() {
               </div>
               <div>
                 <form
+                  id="search-form"
                   className="destination-bar"
                   onSubmit={(e) => {
                     e.preventDefault();
@@ -457,18 +472,6 @@ function Index() {
                       <option value="energetic">Energetic</option>
                     </select>
                   </div>
-                  {input.trim() || chips.length ? (
-                    <Button
-                      variant="icon"
-                      type="submit"
-                      aria-label="Find my neighborhoods"
-                      className="bg-primary text-primary-foreground"
-                    >
-                      <ArrowRight className="h-5 w-5" />
-                    </Button>
-                  ) : (
-                    mic(true)
-                  )}
                 </form>
                 <div className="preference-bar">
                   <div className="preference-toggle" role="group" aria-label="Moving or visiting">
@@ -513,6 +516,9 @@ function Index() {
                       </button>
                     ))}
                   </div>
+                  <Button type="submit" form="search-form" className="find-btn bg-primary text-primary-foreground">
+                    Find my neighborhoods <ArrowRight className="h-4 w-4" />
+                  </Button>
                 </div>
                 {snapNotice && (
                   <p className="mt-3 rounded-xl bg-card p-3 text-xs" role="status">

@@ -381,7 +381,7 @@ export function AnswerCard({ r, onChooseCity }: { r: AgentResult; onChooseCity?:
       {(r.source === "qloo" || r.source === "llm") && <DecisionPanel r={r} />}
       {r.neighborhoods.length > 0 && <LockedBanner city={r.city} />}
       {r.neighborhoods.length > 0 && <div>
-        <h2 className="mb-6 font-display text-4xl">
+        <h2 className="neighborhoods-heading mb-6 font-display text-4xl">
           Neighborhoods that <em>get you.</em>
         </h2>
         <div className="grid gap-7 md:grid-cols-3">

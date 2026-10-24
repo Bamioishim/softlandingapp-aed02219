@@ -265,7 +265,7 @@
 }
 .destination-bar {
   display: grid;
-  grid-template-columns: 1.2fr 1.4fr 0.7fr auto;
+  grid-template-columns: 1.2fr 1.4fr 0.7fr 0.7fr;
   align-items: center;
   gap: 18px;
   padding: 18px 20px 18px 28px;
@@ -550,7 +550,7 @@
     font-size: 43px;
   }
   .destination-bar {
-    grid-template-columns: 1fr auto;
+    grid-template-columns: 1fr;
     border-radius: 24px;
     padding: 20px;
     gap: 14px;
@@ -564,6 +564,19 @@
   .destination-field:last-of-type {
     grid-column: 1;
     padding: 0;
+  }
+  /* >=16px stops iOS Safari zooming into focused fields. */
+  .destination-field input,
+  .destination-field select,
+  .city-picker-input input {
+    font-size: 16px;
+  }
+  .city-panel {
+    padding-bottom: calc(26px + env(safe-area-inset-bottom));
+  }
+  .find-btn {
+    width: 100%;
+    justify-content: center;
   }
   .section-title {
     font-size: 42px;
@@ -668,4 +681,25 @@
 @keyframes pick-fade { from { opacity: 0; } to { opacity: 1; } }
 @media (prefers-reduced-motion: reduce) {
   .pick-sheet, .pick-sheet-backdrop { animation: none; }
+}
+
+.destination-field input,
+.destination-field select,
+.city-picker-input input,
+.find-btn {
+  scroll-margin: 96px 0 140px;
+}
+.find-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 48px;
+  margin-left: auto;
+  padding: 0 22px;
+  border-radius: 999px;
+  font-size: 14px;
+  font-weight: 500;
+}
+.neighborhoods-heading {
+  scroll-margin-top: 88px;
 }
