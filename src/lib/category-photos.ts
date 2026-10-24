@@ -3,7 +3,7 @@ import { CAFE_PHOTO, FOOD_PHOTO } from "./photos";
 
 const COMMONS: Record<string, string[]> = {
   "cafe": [
-    "https://thumb.wikimedia.org/wikipedia/commons/thumb/b/b0/Starbucks_coffee_shop_interior_design.jpg/960px-Starbucks_coffee_shop_interior_design.jpg",
+    "https://thumb.wikimedia.org/wikipedia/commons/thumb/6/66/Covington_St_Johns_Coffeehouse_Interior.jpg/960px-Covington_St_Johns_Coffeehouse_Interior.jpg",
     "https://thumb.wikimedia.org/wikipedia/commons/thumb/1/1b/Interior_Johnie%27s_Coffee_Shop_2021.jpg/960px-Interior_Johnie%27s_Coffee_Shop_2021.jpg",
     "https://thumb.wikimedia.org/wikipedia/commons/thumb/c/c8/Interior_Johnie%27s_Coffee_Shop_2021_2.jpg/960px-Interior_Johnie%27s_Coffee_Shop_2021_2.jpg",
     "https://thumb.wikimedia.org/wikipedia/commons/thumb/b/b5/Newark-on-Trent%2C_Interior_of_%27Cherizena_Coffee_Shop%27%2C_23-24_Stodman_Street_-_geograph.org.uk_-_7846323.jpg/960px-Newark-on-Trent%2C_Interior_of_%27Cherizena_Coffee_Shop%27%2C_23-24_Stodman_Street_-_geograph.org.uk_-_7846323.jpg",
@@ -18,10 +18,10 @@ const COMMONS: Record<string, string[]> = {
   ],
   "restaurant": [
     "https://thumb.wikimedia.org/wikipedia/commons/thumb/f/f3/Restaurant_room_of_Amantaka_luxury_Resort_%26_Hotel_in_Luang_Prabang_Laos.jpg/960px-Restaurant_room_of_Amantaka_luxury_Resort_%26_Hotel_in_Luang_Prabang_Laos.jpg",
-    "https://thumb.wikimedia.org/wikipedia/commons/thumb/7/72/The_interior_dining_room_of_a_Red_Lobster_restaurant_in_Knoxville%2C_Tennessee_06.jpg/960px-The_interior_dining_room_of_a_Red_Lobster_restaurant_in_Knoxville%2C_Tennessee_06.jpg",
-    "https://thumb.wikimedia.org/wikipedia/commons/thumb/7/7e/The_interior_dining_room_of_a_Red_Lobster_restaurant_in_Knoxville%2C_Tennessee_03.jpg/960px-The_interior_dining_room_of_a_Red_Lobster_restaurant_in_Knoxville%2C_Tennessee_03.jpg",
-    "https://thumb.wikimedia.org/wikipedia/commons/thumb/f/f6/The_interior_dining_room_of_a_Red_Lobster_restaurant_in_Knoxville%2C_Tennessee_08.jpg/960px-The_interior_dining_room_of_a_Red_Lobster_restaurant_in_Knoxville%2C_Tennessee_08.jpg",
-    "https://thumb.wikimedia.org/wikipedia/commons/thumb/3/3c/The_interior_dining_room_of_a_Red_Lobster_restaurant_in_Knoxville%2C_Tennessee_09.jpg/960px-The_interior_dining_room_of_a_Red_Lobster_restaurant_in_Knoxville%2C_Tennessee_09.jpg"
+    "https://thumb.wikimedia.org/wikipedia/commons/thumb/8/80/DZ6_0550_A_cozy_dimly_lit_restaurant_interior_with_a_long_reflecting_water_feature_running_past_tables_toward_an_open_kitchen_where_a_chef_works.jpg/960px-DZ6_0550_A_cozy_dimly_lit_restaurant_interior_with_a_long_reflecting_water_feature_running_past_tables_toward_an_open_kitchen_where_a_chef_works.jpg",
+    "https://thumb.wikimedia.org/wikipedia/commons/thumb/b/b4/DZ6_2644_Cozy_candlelit_dinner_tables_set_for_an_intimate_evening_at_a_charming_Thai_restaurant.jpg/960px-DZ6_2644_Cozy_candlelit_dinner_tables_set_for_an_intimate_evening_at_a_charming_Thai_restaurant.jpg",
+    "https://thumb.wikimedia.org/wikipedia/commons/thumb/3/31/Bistro_Remedios_Interior%2C_May_2025_%283%29.jpg/960px-Bistro_Remedios_Interior%2C_May_2025_%283%29.jpg",
+    "https://thumb.wikimedia.org/wikipedia/commons/thumb/1/13/Luna_Trattoria_-_Stierch_02.jpg/960px-Luna_Trattoria_-_Stierch_02.jpg"
   ],
   "park": [
     "https://thumb.wikimedia.org/wikipedia/commons/thumb/a/ac/M%C3%BCnster%2C_WestLotto_--_2013_--_3296.jpg/960px-M%C3%BCnster%2C_WestLotto_--_2013_--_3296.jpg",
