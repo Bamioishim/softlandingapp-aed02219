@@ -52,22 +52,53 @@ export function useSpeechRecognition(onFinal: (text: string) => void) {
   return { supported, listening, transcript, start, stop };
 }
 
+// "Stop speaking" used to stick after results: browsers (Safari/iOS especially) often never fire
+// onend/onerror — when speech is blocked without a user gesture, when cancel() replaces an utterance,
+// or when the utterance object is garbage-collected. So we also watch speechSynthesis.speaking and
+// reset on unmount/navigation.
 export function useSpeechSynthesis() {
   const [speaking, setSpeaking] = useState(false);
+  const current = useRef<SpeechSynthesisUtterance | null>(null); // keeps the utterance alive (GC bug)
+  const poll = useRef<ReturnType<typeof setInterval> | null>(null);
+  const stopPoll = useCallback(() => {
+    if (poll.current) clearInterval(poll.current);
+    poll.current = null;
+  }, []);
+  const done = useCallback(() => {
+    stopPoll();
+    current.current = null;
+    setSpeaking(false);
+  }, [stopPoll]);
   const speak = useCallback((text: string) => {
-    const s = window.speechSynthesis;
+    const s = typeof window !== "undefined" ? window.speechSynthesis : undefined;
     if (!s) return;
     s.cancel();
+    stopPoll();
     const u = new SpeechSynthesisUtterance(text);
     u.rate = 1.02;
-    u.onend = () => setSpeaking(false);
-    u.onerror = () => setSpeaking(false);
+    u.onend = () => current.current === u && done();
+    u.onerror = () => current.current === u && done();
+    current.current = u;
     setSpeaking(true);
     s.speak(u);
-  }, []);
+    let idle = 0;
+    poll.current = setInterval(() => {
+      // Two consecutive idle checks (~1.2s) without speaking/pending means it ended or never started.
+      idle = s.speaking || s.pending ? 0 : idle + 1;
+      if (idle >= 2) done();
+    }, 600);
+  }, [done, stopPoll]);
   const cancel = useCallback(() => {
-    window.speechSynthesis?.cancel();
-    setSpeaking(false);
-  }, []);
+    if (typeof window !== "undefined") window.speechSynthesis?.cancel();
+    done();
+  }, [done]);
+  useEffect(() => {
+    const onHide = () => cancel();
+    window.addEventListener("pagehide", onHide);
+    return () => {
+      window.removeEventListener("pagehide", onHide);
+      cancel();
+    };
+  }, [cancel]);
   return { speaking, speak, cancel };
 }
