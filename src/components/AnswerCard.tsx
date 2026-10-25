@@ -137,7 +137,7 @@ export function NeighborhoodCard({
         {n.scoreAvailable !== false && <span className="match-badge">
           <span className="match-dot" /> <strong>{Math.min(99, n.score)}%</strong> match
         </span>}
-        {n.image && !broken && <span className="photo-credit">{n.imageAlt ?? "Photo"}{qloo ? " · Qloo" : ""}</span>}
+        {n.image && !broken && <span className="photo-credit">{n.imageAlt ?? "Photo"}{qloo && n.image.includes("qloo.com") ? " · Qloo" : qloo ? " · Wikipedia" : ""}</span>}
         <span className="sr-only">{city}</span>
       </div>
       <div className="mt-5 flex items-start justify-between gap-2">
@@ -155,7 +155,9 @@ export function NeighborhoodCard({
         ))}
       </div>
       <p className="mt-4 text-[13px] leading-relaxed text-muted-foreground">
-        {n.matched.length
+        {qloo && n.why
+          ? n.why
+          : n.matched.length
           ? `A local rhythm for your love of ${n.matched.slice(0, 2).join(" and ")}.`
           : FIT_LINES[n.name] ?? n.why}
       </p>

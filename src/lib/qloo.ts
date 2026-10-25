@@ -4,6 +4,7 @@ import { runSampleAgent } from "./sample-agent";
 import { similarCities, type Climate } from "./similar-cities";
 import { z } from "zod";
 import { placeImages } from "./qloo-images";
+import { neighborhoodGuesses, strictWikiImage } from "./neighborhood-images";
 
 export const TASTE_CHIPS = ["Food", "Music", "Art", "Nightlife", "Outdoors", "Fashion", "Books", "Film"] as const;
 export const NEEDS = ["halal", "vegan", "nut-free", "gluten-free", "accessible"] as const;
@@ -151,24 +152,62 @@ export async function queryQloo(input: z.infer<typeof agentInput>, key: string |
     const neighborhoodName = (p: Entity) => p.properties?.locality?.neighborhood?.name ?? p.properties?.neighborhood;
     const places: Place[] = rows.slice(0, 6).map((p) => ({ name: p.name, category: p.properties?.primary_genre?.name ?? "Place", neighborhood: neighborhoodName(p) ?? city, tags: (p.tags ?? []).map((t) => t.name), reason: p.properties?.description ?? `Recommended by Qloo in ${city}.`, lat: p.location?.lat, lng: p.location?.lon }));
     const neighborhoods = new Map<string, NeighborhoodMatch>();
+    // Each place reads the heatmap cell it falls in (nearest cell). A neighborhood's score is the mean of
+    // the distinct cells under its Qloo places, so two areas only tie when Qloo's data actually ties.
+    const cellKey = (c: (typeof cells)[number]) => `${c.location.latitude.toFixed(5)},${c.location.longitude.toFixed(5)}`;
+    const nearestCell = (loc: { lat: number; lon: number }) => cells.reduce<(typeof cells)[number] | undefined>((best, c) => !best || Math.hypot(c.location.latitude - loc.lat, c.location.longitude - loc.lon) < Math.hypot(best.location.latitude - loc.lat, best.location.longitude - loc.lon) ? c : best, undefined);
+    const cellSets = new Map<string, Map<string, number>>();
+    const anchors = new Map<string, Entity>();
     for (const p of rows) {
       const name = neighborhoodName(p);
       if (!name || name === city) continue;
-      let affinity = p.query?.affinity;
-      if (p.location && cells.length) {
-        const location = p.location;
-        const nearest = [...cells].sort((a, b) => Math.hypot(a.location.latitude - location.lat, a.location.longitude - location.lon) - Math.hypot(b.location.latitude - location.lat, b.location.longitude - location.lon))[0];
-        affinity = nearest?.query.affinity ?? affinity;
+      if (!anchors.has(name)) anchors.set(name, p);
+      const cell = p.location && cells.length ? nearestCell(p.location) : undefined;
+      if (cell && typeof cell.query.affinity === "number") {
+        const set = cellSets.get(name) ?? new Map<string, number>();
+        set.set(cellKey(cell), cell.query.affinity);
+        cellSets.set(name, set);
       }
-      const tags = (p.tags ?? []).map((t) => t.name);
+    }
+    for (const p of rows) {
+      const name = neighborhoodName(p);
+      if (!name || name === city || neighborhoods.has(name)) {
+        const current = name ? neighborhoods.get(name) : undefined;
+        if (current && current.lat === undefined && p.location) { current.lat = p.location.lat; current.lng = p.location.lon; }
+        continue;
+      }
+      const set = cellSets.get(name);
+      const values = set ? [...set.values()] : [];
+      const affinity = values.length ? values.reduce((a, b) => a + b, 0) / values.length : cells.length ? undefined : p.query?.affinity;
       const score = typeof affinity === "number" ? Math.round(Math.max(0, Math.min(0.99, affinity)) * 100) : 0;
-      const current = neighborhoods.get(name);
-      if (!current || score > current.score) neighborhoods.set(name, { name, borough: city, rent: "$$", rentRange: "", tags, matched: [], score, scoreAvailable: typeof affinity === "number", lat: p.location?.lat, lng: p.location?.lon, why: `Qloo recommends ${p.name} here${cells.length ? "; score estimated from the nearest taste heatmap cell" : " based on your taste signals"}.` });
-      else if (current.lat === undefined && p.location) { current.lat = p.location.lat; current.lng = p.location.lon; }
+      neighborhoods.set(name, { name, borough: city, rent: "$$", rentRange: "", tags: (p.tags ?? []).map((t) => t.name), matched: [], score, scoreAvailable: typeof affinity === "number", lat: p.location?.lat, lng: p.location?.lon, why: "" });
     }
     const top = [...neighborhoods.values()].sort((a, b) => b.score - a.score).slice(0, 3);
+    // Two cards resting on the exact same heatmap cells would show a copied number: keep it on the first, explain on the other.
+    const sharedWith = new Map<string, string>();
+    top.forEach((n, i) => {
+      const keys = [...(cellSets.get(n.name)?.keys() ?? [])].sort().join("|");
+      const twin = keys ? top.slice(0, i).find((m) => [...(cellSets.get(m.name)?.keys() ?? [])].sort().join("|") === keys) : undefined;
+      if (twin) { sharedWith.set(n.name, twin.name); n.scoreAvailable = false; }
+    });
+    const list = (xs: string[]) => xs.length <= 1 ? (xs[0] ?? "") : `${xs.slice(0, -1).join(", ")} and ${xs[xs.length - 1]}`;
+    const picked = list(terms);
+    for (const n of top) {
+      const anchor = anchors.get(n.name);
+      const hay = anchor ? text(anchor) : "";
+      const hits = terms.filter((t) => t.split(/\s+/).some((w) => w.length > 2 && hay.includes(w)));
+      const anchorLine = anchor ? (hits.length ? ` ${anchor.name} is tagged for ${list(hits)}.` : ` ${anchor.name} is Qloo's top pick here.`) : "";
+      const twin = sharedWith.get(n.name);
+      n.why = twin
+        ? `Because you picked ${picked}, Qloo's taste heatmap rates this area, but it reads the same heatmap spot as ${twin}, so no separate score is shown.${anchorLine}`
+        : cells.length && n.scoreAvailable
+          ? `Because you picked ${picked}, Qloo's taste heatmap scores ${n.name} ${n.score}% for that mix.${anchorLine}`
+          : `Because you picked ${picked}, Qloo ranks ${n.name} among its ${city} picks for your taste.${anchorLine}`;
+    }
     // Each card gets a distinct photo from one of its own Qloo places; none means no photo.
     // Prefer the highest-resolution image: known widths >= 800px first, then the largest known.
+    // Big venues (arenas, stadiums, airports) don't show a neighborhood, so a real photo of the area is used instead.
+    const venue = /\b(arena|stadium|coliseum|ballpark|airport|field|speedway|convention cent(er|re))\b/i;
     const used = new Set<string>();
     for (const n of top) {
       const candidates = rows
@@ -178,10 +217,16 @@ export async function queryQloo(input: z.infer<typeof agentInput>, key: string |
       const sharp = candidates.filter((c) => c.width >= 800);
       const pool = (sharp.length ? sharp : candidates).sort((a, b) => b.width - a.width || b.height - a.height);
       const hit = pool[0];
+      if (hit && venue.test(hit.p.name)) {
+        const generic = /^(downtown|midtown|uptown|city cent(er|re)|old town)$/i.test(n.name.trim());
+        const label = generic ? `${n.name} ${city}` : n.name;
+        const photo = await strictWikiImage(label, city, "neighborhood", fetcher as unknown as Parameters<typeof strictWikiImage>[3], `${n.name} ${city}`, generic ? [label] : neighborhoodGuesses(n.name, undefined, city)).catch(() => undefined);
+        if (photo && !used.has(photo.src)) { used.add(photo.src); n.image = photo.src; n.imageAlt = `${n.name}, ${city}`; continue; }
+      }
       if (hit) { used.add(hit.url); n.image = hit.url; n.imageAlt = hit.p.name; }
     }
     const plan = buildPlan(city, prefs, places, top);
-    const summary = top.length ? `Qloo's place insights point to ${top.map((n) => n.name).join(", ")} in ${city}. ${cells.length ? "Neighborhood scores estimate taste affinity at nearby heatmap cells, not housing suitability." : "Qloo returned no heatmap scores; these neighborhoods come from recommended places."}` : `Qloo found ${rows.length} places in ${city}${cells.length ? " and taste heatmap results" : ""}, but no verified neighborhood labels.`;
+    const summary = top.length ? `For ${list(terms)}, Qloo's taste data points to ${top.map((n) => n.name).join(", ")} in ${city}. ${cells.length ? "Scores show Qloo taste affinity for your picks, not housing suitability." : "Qloo returned no heatmap scores; these neighborhoods come from its recommended places."}` : `Qloo found ${rows.length} places in ${city}${cells.length ? " and taste heatmap results" : ""}, but no verified neighborhood labels.`;
     return { city, mode: "qloo", source: "qloo", status: "ok", trip: prefs.trip ?? "moving", summary, spoken: summary, steps, neighborhoods: top, places, plan };
   } catch (e) {
     // A 400 "unable to resolve to a valid locality" means Qloo has no coverage here: show the unavailable blank, not an error.
