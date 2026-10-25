@@ -220,7 +220,7 @@ export async function queryQloo(input: z.infer<typeof agentInput>, key: string |
       if (hit && venue.test(hit.p.name)) {
         const generic = /^(downtown|midtown|uptown|city cent(er|re)|old town)$/i.test(n.name.trim());
         const label = generic ? `${n.name} ${city}` : n.name;
-        const photo = await strictWikiImage(label, city, "neighborhood", fetcher as unknown as Parameters<typeof strictWikiImage>[3], `${n.name} ${city}`, generic ? [label] : neighborhoodGuesses(n.name, undefined, city)).catch(() => undefined);
+        const photo = await strictWikiImage(label, city, "neighborhood", (url: string) => fetch(url, { headers: { "User-Agent": "SoftLanding/1.0 (softlanding-mauve.vercel.app)" }, signal: AbortSignal.timeout(6000) }), `${n.name} ${city}`, generic ? [label] : neighborhoodGuesses(n.name, undefined, city)).catch(() => undefined);
         if (photo && !used.has(photo.src)) { used.add(photo.src); n.image = photo.src; n.imageAlt = `${n.name}, ${city}`; continue; }
       }
       if (hit) { used.add(hit.url); n.image = hit.url; n.imageAlt = hit.p.name; }
