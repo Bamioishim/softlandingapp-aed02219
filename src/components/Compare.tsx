@@ -13,7 +13,7 @@ export function topSpots(r: AgentResult, n: NeighborhoodMatch) {
   return r.places.filter((p) => p.neighborhood === n.name).slice(0, 3).map((p) => p.name);
 }
 export function tasteSignals(n: NeighborhoodMatch) {
-  return [...new Set([...n.matched, ...n.tags])].slice(0, 5);
+  return [...new Set([...n.matched, ...n.tags])].filter((t) => /\p{L}/u.test(t)).slice(0, 5);
 }
 
 export function Compare({ r }: { r: AgentResult }) {

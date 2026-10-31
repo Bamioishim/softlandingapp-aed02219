@@ -103,7 +103,7 @@ export function NeighborhoodCard({
   // Only the card's own Qloo place photo is shown; without one, a plain cream card with the name.
   const [broken, setBroken] = useState(false);
   useEffect(() => setBroken(false), [n.image]);
-  const tags = [...new Set([...n.matched, ...n.tags])].slice(0, 3);
+  const tags = [...new Set([...n.matched, ...n.tags])].filter((t) => /\p{L}/u.test(t)).slice(0, 3);
   const interactive = onClick
     ? {
         role: "button" as const,
@@ -381,7 +381,7 @@ export function AnswerCard({ r, onChooseCity }: { r: AgentResult; onChooseCity?:
         )}
       </div>
       {(r.source === "qloo" || r.source === "llm") && <DecisionPanel r={r} />}
-      {r.neighborhoods.length > 0 && <LockedBanner city={r.city} />}
+      {r.neighborhoods.length > 0 && <LockedBanner city={r.city} names={r.neighborhoods.map((x) => x.name)} />}
       {r.neighborhoods.length > 0 && <div>
         <h2 className="neighborhoods-heading mb-6 font-display text-4xl">
           Neighborhoods that <em>get you.</em>

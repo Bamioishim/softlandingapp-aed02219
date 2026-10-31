@@ -139,10 +139,10 @@ export function PickSheet({ pick, onClose, onChange }: { pick: LockedPick; onClo
   );
 }
 
-export function LockedBanner({ city }: { city: string }) {
+export function LockedBanner({ city, names }: { city: string; names?: string[] }) {
   const [pick, lock] = useLockedPick();
   const { status, share, download } = useCardActions(pick);
-  if (!pick || pick.city !== city) return null;
+  if (!pick || pick.city !== city || (names && !names.includes(pick.neighborhood))) return null;
   return (
     <section className="animate-rise rounded-2xl bg-card p-5 sm:p-6" aria-label="Your locked pick" data-testid="locked-banner">
       <p className="eyebrow flex items-center gap-2 text-muted-foreground">
